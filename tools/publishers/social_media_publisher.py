@@ -266,8 +266,18 @@ class SocialMediaPublisher(BaseTool):
             "monetization_keyword": monetization_keyword,
         }
 
-    def discover_meta_accounts(self, fb_access_token: str) -> dict[str, Any]:
-        """Auto-discover Facebook Page ID, Page Token, and linked Instagram Business Account ID."""
+    def discover_meta_accounts(
+        self,
+        fb_access_token: str,
+        preferred_fb_page_id: str = "",
+        preferred_ig_user_id: str = "",
+    ) -> dict[str, Any]:
+        """Auto-discover all Facebook Pages, Page Tokens, and linked Instagram Business Accounts.
+
+        Handles the common setup where Instagram is linked to one Facebook Page while
+        Facebook posts target either the same Page or a different Facebook Page under
+        the same User Access Token.
+        """
         if not fb_access_token:
             return {
                 "discovered": False,
@@ -290,22 +300,78 @@ class SocialMediaPublisher(BaseTool):
                     "reason": payload.get("error", {}).get("message", "No Facebook Pages found on token"),
                 }
 
-            # Prefer the first page that has a linked instagram_business_account
-            chosen = pages[0]
-            for page in pages:
-                if page.get("instagram_business_account"):
-                    chosen = page
-                    break
+            all_pages: list[dict[str, Any]] = []
+            all_ig_accounts: list[dict[str, Any]] = []
 
-            ig_acct = chosen.get("instagram_business_account") or {}
+            for page in pages:
+                ig_acct = page.get("instagram_business_account") or {}
+                all_pages.append(
+                    {
+                        "fb_page_id": page.get("id", ""),
+                        "fb_page_name": page.get("name", ""),
+                        "has_linked_instagram": bool(ig_acct.get("id")),
+                        "ig_user_id": ig_acct.get("id", ""),
+                        "ig_username": ig_acct.get("username", ""),
+                    }
+                )
+                if ig_acct.get("id"):
+                    all_ig_accounts.append(
+                        {
+                            "ig_user_id": ig_acct.get("id", ""),
+                            "ig_username": ig_acct.get("username", ""),
+                            "ig_name": ig_acct.get("name", ""),
+                            "ig_followers_count": ig_acct.get("followers_count"),
+                            "linked_via_fb_page_id": page.get("id", ""),
+                            "linked_via_fb_page_name": page.get("name", ""),
+                        }
+                    )
+
+            # 1. Pick the Facebook Page for Facebook publishing:
+            #    - If preferred_fb_page_id (or FB_PAGE_NAME) is set, match that page
+            #    - Otherwise prefer the page with a linked IG account, or fallback to pages[0]
+            preferred_fb_name = (os.environ.get("FB_PAGE_NAME") or "").strip().lower()
+            chosen_fb_page = pages[0]
+            for page in pages:
+                if preferred_fb_page_id and page.get("id") == preferred_fb_page_id:
+                    chosen_fb_page = page
+                    break
+                if preferred_fb_name and preferred_fb_name in (page.get("name") or "").lower():
+                    chosen_fb_page = page
+                    break
+            else:
+                for page in pages:
+                    if page.get("instagram_business_account"):
+                        chosen_fb_page = page
+                        break
+
+            # 2. Pick the Instagram account (even if it is linked to a DIFFERENT Facebook Page!):
+            chosen_ig_page = None
+            for page in pages:
+                ig_acct = page.get("instagram_business_account") or {}
+                if not ig_acct.get("id"):
+                    continue
+                if preferred_ig_user_id and ig_acct.get("id") == preferred_ig_user_id:
+                    chosen_ig_page = page
+                    break
+                if chosen_ig_page is None:
+                    chosen_ig_page = page
+
+            ig_acct = (chosen_ig_page or {}).get("instagram_business_account") or {}
+            ig_page_token = (chosen_ig_page or {}).get("access_token") or fb_access_token
+
             return {
                 "discovered": True,
-                "fb_page_id": chosen.get("id", ""),
-                "fb_page_name": chosen.get("name", ""),
-                "fb_page_access_token": chosen.get("access_token") or fb_access_token,
+                "fb_page_id": chosen_fb_page.get("id", ""),
+                "fb_page_name": chosen_fb_page.get("name", ""),
+                "fb_page_access_token": chosen_fb_page.get("access_token") or fb_access_token,
                 "ig_user_id": ig_acct.get("id", ""),
                 "ig_username": ig_acct.get("username", ""),
                 "ig_followers_count": ig_acct.get("followers_count"),
+                "ig_linked_fb_page_id": (chosen_ig_page or {}).get("id", ""),
+                "ig_linked_fb_page_name": (chosen_ig_page or {}).get("name", ""),
+                "ig_access_token": ig_page_token,
+                "all_pages": all_pages,
+                "all_instagram_accounts": all_ig_accounts,
             }
         except Exception as exc:
             return {
@@ -611,13 +677,17 @@ class SocialMediaPublisher(BaseTool):
 
         # Auto-discover FB Page ID & linked IG Business Account ID if needed
         discovered = {"discovered": False}
-        if creds["fb_access_token"] and (not creds["fb_page_id"] or not creds["ig_user_id"] or operation == "discover_accounts"):
-            discovered = self.discover_meta_accounts(creds["fb_access_token"])
+        if creds["fb_access_token"]:
+            discovered = self.discover_meta_accounts(
+                creds["fb_access_token"],
+                preferred_fb_page_id=creds["fb_page_id"],
+                preferred_ig_user_id=creds["ig_user_id"],
+            )
             if discovered.get("discovered"):
                 creds["fb_page_id"] = creds["fb_page_id"] or discovered.get("fb_page_id", "")
                 creds["ig_user_id"] = creds["ig_user_id"] or discovered.get("ig_user_id", "")
                 creds["fb_access_token"] = discovered.get("fb_page_access_token") or creds["fb_access_token"]
-                creds["ig_access_token"] = creds["ig_access_token"] or creds["fb_access_token"]
+                creds["ig_access_token"] = discovered.get("ig_access_token") or creds["ig_access_token"] or creds["fb_access_token"]
 
         if operation == "discover_accounts":
             return ToolResult(
