@@ -1,0 +1,88 @@
+name: OpenMontage + Social Media Posters (Instagram & Facebook Autopost + Monetization)
+
+on:
+  workflow_dispatch:
+    inputs:
+      video_path:
+        description: "Local video path or public https:// video URL to publish"
+        required: true
+        default: "exports/demo/video/output.mp4"
+      title:
+        description: "Reel / Video Title (Hook)"
+        required: true
+        default: "He Awakened the Forbidden Shadow Power..."
+      description:
+        description: "Story hook-to-suspense caption"
+        required: false
+        default: "Everyone laughed at his E-Rank status until the dungeon gates locked shut."
+      part_number:
+        description: "Episode Part Number (e.g. 1, 2, 3)"
+        required: false
+        default: "1"
+      total_parts:
+        description: "Total Parts in Series (e.g. 3)"
+        required: false
+        default: "3"
+      monetization_url:
+        description: "Affiliate / Store / Product link to drop in the First Comment & Keyword Replies"
+        required: false
+        default: ""
+      monetization_keyword:
+        description: "Comment trigger keyword (e.g. LINK, ANIME, PART2)"
+        required: false
+        default: "LINK"
+  schedule:
+    # Runs daily at 14:00 UTC to scan & auto-reply to new buyer/cliffhanger comments
+    - cron: "0 14 * * *"
+
+jobs:
+  publish-and-monetize:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install OpenMontage & social-media-posters
+        run: |
+          pip install -r requirements.txt
+          pip install -e ./social_media_posters
+
+      - name: Publish to Instagram Reels & Facebook Page + Monetize Comments
+        env:
+          FB_ACCESS_TOKEN: ${{ secrets.FB_ACCESS_TOKEN }}
+          FB_PAGE_ID: ${{ secrets.FB_PAGE_ID }}
+          IG_USER_ID: ${{ secrets.IG_USER_ID }}
+          MONETIZATION_URL: ${{ inputs.monetization_url || secrets.MONETIZATION_URL }}
+          MONETIZATION_CTA: ${{ secrets.MONETIZATION_CTA || '🔥 Grab the full Anime pack / exclusive link here:' }}
+          MONETIZATION_KEYWORD: ${{ inputs.monetization_keyword || secrets.MONETIZATION_KEYWORD || 'LINK' }}
+        run: |
+          python3 - << 'EOF'
+          import json, os
+          from tools.publishers.social_media_publisher import SocialMediaPublisher
+
+          publisher = SocialMediaPublisher()
+          event_name = "${{ github.event_name }}"
+
+          if event_name == "schedule":
+              res = publisher.execute({"operation": "engage_comments", "title": "Comment Engagement"})
+          else:
+              res = publisher.execute({
+                  "operation": "publish",
+                  "video_path": "${{ inputs.video_path }}",
+                  "title": "${{ inputs.title }}",
+                  "description": "${{ inputs.description }}",
+                  "part_number": int("${{ inputs.part_number }}" or 1),
+                  "total_parts": int("${{ inputs.total_parts }}" or 3),
+                  "platforms": ["instagram", "facebook"],
+                  "link_in_comment": True,
+                  "engage_comments": True,
+              })
+          print(json.dumps(res.data, indent=2))
+          if not res.success:
+              raise SystemExit(res.error)
+          EOF

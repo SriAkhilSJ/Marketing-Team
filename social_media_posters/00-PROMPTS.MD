@@ -1,0 +1,594 @@
+# 00 - Initialization
+
+## GitHub Agent
+
+Create multiple GitHub Actions that other can use:
+- Post to X
+- Post to Facebook Page
+- Post to Instagram
+- Post to Threads
+
+Each action should be contain in its own folder, with all required files to meet GitHub Actions requirement PLUS an README.MD file documenting all necessary information (e.g. description, required parameters, credits)
+
+Each action is backed by a python script performing appropriate posting tasks. A link to sample implementation of each posting tasks are available below
+- Post to X: https://github.com/geraldnguyen/tellstory.net/blob/main/scripts/post_to_x.py
+- Post to Facebook Page: https://github.com/geraldnguyen/tellstory.net/blob/main/scripts/post_to_fb_page.py
+- Post to Instagram: https://github.com/geraldnguyen/tellstory.net/blob/main/scripts/post_to_instagram.py
+- Post to Threads: https://github.com/geraldnguyen/tellstory.net/blob/main/scripts/post_to_threads.py
+
+You are free to clean up the codes, standardize the behaviors, and extract common functionality to a shared module if necessary.
+
+Create or update a CHANGELOG.MD file with a summary of the changes
+
+## Adjustments - add instructions for resolving common module import errors with PYTHONPATH and VS Code settings 
+
+## Adjustments - Run the scripts locally
+
+Add support for running the script locally by loading the secret from a local .env file if present
+
+## Adjustments - Support remote media
+
+If the media file path is from the internet (http or https) and size less than 5MB (configurable as an parameter) download the file, then use the downloaded file's path to upload.
+
+## Adjustments - Dry-run mode
+
+Add a dry-run mode via environment variable DRY_RUN. If true, just print out the info about the content, media files, the request body, but do not actually post.
+
+Apply the same changes to all post-to-... script. Use a common function or module if possible.
+
+
+## Adjustments - Templated content
+
+Implement the function process_templated_content_if_needed
+
+```
+  def process_templated_content_if_needed(content: str) -> str:
+    """Process templated content if context is provided."""
+    
+    # Copilot: Implement templating logic if needed
+    # Each templated placeholder is in the format ${source.KEY}
+    # where source can be 'env' for environment variables or 'builtin' for built-in values
+    # env.KEY should be replaced with the value of the environment variable KEY
+    # Supported built-in values: CURR_DATE, CURR_TIME, CURR_DATETIME
+    # TIMEZONE can be set via env var TIME_ZONE, default to UTC
+
+    return content
+```
+
+## Adjustments - API-driven templated content
+
+Support the "json" template source:
+
+Given the following values in environment:
+
+POST_CONTENT=API-driven: @{json.stories[0].description}, @{api.stories[0].permalink}
+CONTENT_JSON=https://tellstory.net/stories/random/index.json
+
+Expect:
+- Retrieve the json at the URL given in CONTENT_JSON variable
+- Travel the json path, supporting both dot notation and array bracket notation to retrieve the value
+
+Create unit tests for the changes
+
+Then run the tests
+
+
+## Adjustments - API-driven templated content - post retrieval extraction
+
+Given the following values in environment:
+
+POST_CONTENT=API-driven: @{json.description}, @{json.permalink}
+CONTENT_JSON=https://tellstory.net/stories/random/index.json | stories[0]
+
+
+Expect:
+- Tokenize the CONTENT_JSON variable by space and pipe (|). 
+- Retrieve the json at the URL given in CONTENT_JSON variable
+- If there are a json path following the URL, process the json path, then return the obtain json for use in the POST_CONTENT's processing.
+- Travel the json path from the json obtained in the step above, supporting both dot notation and array bracket notation to retrieve the value
+
+Create unit tests for the changes
+
+Then run the tests
+
+## Adjustments - API-driven templated content - post retrieval extraction - Support `[RANDOM]` array element picker
+
+Update the get_json_data function to support `[RANDOM]` array element picker
+
+Given the following values in environment:
+
+POST_CONTENT=API-driven: @{json.description}, @{json.permalink}
+CONTENT_JSON=https://tellstory.net/stories/random/index.json | stories[RANDOM]
+
+Expectation:
+- Pick a random number beween 0 and the size of the arrays resolved by the json path with the `[RANDOM]` part.
+- Obtain the element at the random index picked in the previous step
+- Return the element as the json data
+
+Create unit tests for the changes
+
+Then run the tests
+
+## Adjustment - List operations
+
+Expand the Pipe operator to template expression within POST_CONTENT to support the following list operations
+- `each:prefix(str)`: prefix the `str` to each each element in the input array
+- `join(str)`: Join all elements in the input array into a single string using the `str` concatenator
+
+
+Example: Assume the `json` value evaluated to
+
+```
+{
+      "title": "The Myth of Tereus and Procne",
+      "url": "/stories/mythology/the-myth-of-tereus-and-procne/",
+      "permalink": "https://tellstory.net/stories/mythology/the-myth-of-tereus-and-procne/",
+      "date": "2025-08-05",
+      "genres": [
+        "Mythology",
+        "Tragedy",
+        "Supernatural"
+      ],
+      "origins": [
+        "Ancient Greece"
+      ],
+      "description": "a short description",
+      "summary": "A short summary",
+      "word_count": 2025,
+      "featured": false
+    }
+```
+
+and the `POST_CONTENT` having value
+
+```
+POST_CONTENT=API-driven with random pick: @{json.description}, @{json.permalink} @{json.genres | each:prefix('#') | join(' ')}
+```
+
+The template engine shall product the following output
+
+```
+API-driven with random pick: a short description, https://tellstory.net/stories/mythology/the-myth-of-tereus-and-procne/ #Mythology #Tragedy #Supernatural
+```
+
+Expectation:
+- Implement the above requirements
+- Create unit tests for the changes
+- Then run the tests
+- Before handover, update all relevant .MD file documenting the new functionality changes
+
+## Adjustment - List operations - casing operations
+
+Expand the Pipe operator to template expression within POST_CONTENT to support the following list operations
+- each:case_title(): example: `hello world` -> `Hello World`
+- each:case_sentence(): example: `hello world` -> `Hello world`
+- each:case_upper(): example: `hello world` -> `HELLO WORLD`
+- each:case_lower(): example: `Hello WORLD` -> `hello world`
+- each:case_pascal(): example: `hello world` -> `HelloWorld`
+- each:case_kebab(): example: `hello world` -> `hello-world`
+- each:case_snake(): example: `hello world` -> `hello_world`
+
+Expectation:
+- Implement the above requirements
+- Create unit tests for the changes
+- Then run the tests
+- Before handover, update all relevant .MD file documenting the new functionality changes
+
+
+## Adjustment - List operations - length operations
+
+Expand the Pipe operator to template expression within POST_CONTENT to support the following list operations
+- `max_length(int, str)`: The input string's length must be less than or equal to the 1st positive integer `int` argument, else the string will be clipped at the end of its last word and appended the 2nd argument `str`. The total length of the resulting string may be larger than the 1st argument. 
+- `each:max_length(int, str)`: similar to `max_length(int, str)` but apply to element of a list or array
+- `join_while(str, int)`: operate similar to `join(str)` but stop and return the resulting string when it encounters any element whose joining would create a string whose length is larger than the 2nd argument `int`
+
+Expectation:
+- Implement the above requirements
+- Create unit tests for the changes
+- Then run the tests
+- Before handover, update all relevant .MD file documenting the new functionality changes
+
+## Adjustment - Process multiple template strings using the same json root
+
+Create a `process_templated_contents` function in templating_utils.py:
+- Support varargs parameters, each is a templated string to process
+- Reuse the existing helpers from `process_templated_content_if_needed` 
+- Fetches CONTENT_JSON only once, and use the same obtained `json` to process all templated string arguments
+
+Create new unit tests for `process_templated_contents`
+
+Then modify the `post_to_x.py` to call `process_templated_contents` to process POST_CONTENT
+
+Then modify the `post_to_facebook.py` to call `process_templated_contents` to process POST_CONTENT and POST_LINK
+
+Then safely delete `process_templated_content_if_needed`
+
+
+## Adjustment - random() and attr(attribute) operations ✅ COMPLETED
+
+Expand the Pipe operator to template expression (e.g. POST_CONTENT, POST_LINK) to support the following operations
+- `random()`: a List opreation. Return an random element from the input list. If the list is null or empty, throw error
+- `attr(name)`: an json object operation. Return the `name` attribute of the input object. If the object is null, throw error. If the attribute does not exist, throw error.
+
+
+Expectation:
+- Implement the above requirements ✅
+- Create unit tests for the changes ✅
+- Then run the tests ✅
+- Before handover, update all relevant .MD file documenting the new functionality changes ✅
+
+## v1.9.0 - Post-to-Linkedin action
+
+Create a new post-to-linkedin action in the same-named folder.
+
+The post-to-linkedin action shall support all features common to other post-to actions.
+
+Detailed logging and dry-run mode must be available to faciliate troubleshooting.
+
+Expectation:
+- Implement the above requirements
+- Create unit tests for the changes
+- Then run the tests
+- Before handover, update all relevant .MD file (in the same action folder, and on the parent folder) documenting the new functionality changes
+
+## v1.10.0 - post-to-youtube action ✅ COMPLETED
+
+Create a new post-to-youtube in the same-named folder
+
+The post-to-youtube action shall support all features common to other post-to actions.
+
+Additionally:
+- Support Post and Video. The video can be uploaded locally or from a publically accessible web address ✅
+- Support scheduling by date and time ✅
+- Support all required and optional metadata fields ✅
+
+Detailed logging and dry-run mode must be available to faciliate troubleshooting. ✅
+
+Expectation:
+- Implement the above requirements ✅
+- Create unit tests for the changes ✅
+- Then run the tests ✅
+- Before handover, update all relevant .MD file (in the same action folder, and on the parent folder) documenting the new functionality changes ✅
+
+
+
+## v1.11.0 - Support loading parameters from a JSON file ✅ COMPLETED
+
+Currently, all post-to-XYZ scripts support loading parameters through environment variables and `.env` file
+
+Expectation, **all** post-to-XYZ scripts must support environment variables, `.env` file and an JSON file (file's path can be either absolute or relative, specified via `INPUT_FILE` environment variable or entry in `.env` file, or `input.json` if not provided)
+
+Detailed logging and dry-run mode must be available to faciliate troubleshooting. ✅
+
+Expectation:
+- Implement the above requirements ✅
+- Create unit tests for the changes ✅
+- Then run the tests ✅
+- Before handover, update all relevant .MD file (in the same action folder, and on the parent folder) documenting the new functionality changes ✅
+
+## v1.12.0 - Create a CLI wrapper around the available post-to-XYZ scripts ✅ COMPLETED
+
+Create a publishable CLI module providing access to all post-to-XYZ scripts. Name this module `social`
+
+The CLI shall support each post-to-??? as a command, in addition to `version`, `help` ✅
+
+The CLI shapp suport options corresponding to each script's environment variables such as:
+- `--dry-run` for `DRY_RUN` ✅
+- `--input-file` for `INPUT_FILE` ✅
+- `--content-json` for `CONTENT_JSON` ✅
+- etc (carefully extract the list of required and optional environment variables from each script to populate the list of supported option) ✅
+
+The CLI's GUIDE.md must provide broad examples, at least 2 examples for each post-to-???. The guide should include as much setup and troubleshooting procedures as available to assist users. ✅
+
+Detailed logging and dry-run mode must be available to faciliate troubleshooting. ✅
+
+Expectation:
+- Implement the above requirements ✅
+- Create unit tests for the changes ✅
+- Then run the tests ✅
+- Before handover, update all relevant .MD file (in the same action folder, and on the parent folder) documenting the new functionality changes ✅
+
+## v1.13.0 - Update FB page video posting ✅ COMPLETED
+
+Refer to https://developers.facebook.com/docs/video-api/guides/publishing and update the FB video posting accordingly. ✅
+
+Current upload using MEDIA_FILES parameter failed with `Error posting to Facebook Page: ('Connection aborted.', TimeoutError('The write operation timed out'))` error ✅
+
+Detailed logging and dry-run mode must be available to faciliate troubleshooting. ✅
+
+Expectation:
+- Implement the above requirements ✅
+- Create unit tests for the changes ✅
+- Then run the tests ✅
+- Before handover, update all relevant .MD file (in the same action folder, and on the parent folder) documenting the new functionality changes ✅
+
+## v1.15.0 - Create an Update Youtube script in the same post-to-youtube folder
+
+Create an update_youtube.py in the post-to-youtube folder. It performs the following:
+- Require a youtube video id
+- Update Video description if a description is provided
+- Update video tags if tags are provided
+- Update video title if title is provided
+- Update any metadata if the corresponding metadata is provided
+
+Update the CLI correspondingly to surface the new feature
+
+Expectation:
+- Implement the above requirements 
+- Create unit tests for the changes 
+- Then run the tests 
+- Before handover, update all relevant .MD file (in the same action folder, and on the parent folder) documenting the new functionality changes 
+
+
+## v1.16.0 - Support scheduling of Facebook post (text, image or video) + suport youtube scheduling with offset format
+
+Update the relevant scripts and files in post-to-facebook folder to support scheduling of facebook content
+Support the following scheduling mechanism:
+- Specific date and time 
+- Offset format: `+<offset><time-unit>` where `+` means present time PLUS the offset period, `<offset>` is an positive integer, `<time-unit>` can be "d" for days, "h" for hours, "m" for minutes.
+
+When not specified, the facebook content shall publish immediately.
+
+Update relevant files in post-to-youtube folder to suport youtube scheduling with offset format described above
+
+Update the CLI correspondingly to surface the new feature. Update the Python package-related files to match the new version.
+
+Expectation:
+- Implement the above requirements 
+- Create unit tests for the changes 
+- Then run the tests 
+- Before handover, update all relevant .MD file (in the same action folder, and on the parent folder) documenting the new functionality changes 
+
+## v1.17.0 - Expand the template content helper
+
+**Optional parantheses following function name**
+
+Update the parser to make  parantheses following function name optional. Note:
+- Single quotes around literal strings are still required
+- Comma separating parameters is optional in non-paranthese format
+
+
+For example: 
+- `each:prefix('AAA')` can be written as `each:prefix 'AAA'`  
+- `join_while(' ', 100)` can be written as `join_while ' ' 100`
+
+**`json.expression` can appear in place of string parameter**
+
+Function that accept string parameter e.g. `each:prefix(str)` or `join(str)` can accept both literal string (wrapped in single quotes) as well as `json.xxx` expression
+
+For example, assume `json.series` has value `Aesop`, then the `each:prefix json.series` is the same as `each:prefix Aesop`
+
+**The `or` operation**
+
+`or(str or template_expression)`: return the left-hand-side value if it is not-null, not-empty, not-blank. Else evaluate `str or template_expression` and return the obtained value
+
+For example: Given `@{ json.youtube_link | or json.permalink }` expresson:
+- If `json.youtube_link` is null, empty or blank, it will return the value from `json.permalink`
+- If `json.youtube_link` has a valid value e.g. `https://...`, it will return that value.
+
+The `or` operation can be chained to implement a coalese-like operation where the first truthy value is returned.
+
+Expectation:
+- Implement the above requirements 
+- Create unit tests for the changes 
+- Then run the tests 
+- If applicable, update the CLI correspondingly to surface the new feature. 
+- Update the Python package-related files to match the new version.
+- Before handover, update all relevant .MD file (in the same action folder, and on the parent folder) documenting the new functionality changes 
+
+## v1.18.0 - Fix Unicode encoding and Fix FB posting with multiple media files
+
+vibe-coded
+
+Note: 
+- Update the Python package-related files (__init__.py, pyproject.toml, CHANGELOG.md) to match the new version.
+
+## v1.19.0 - Post to instagram using Facebook login and resumable upload
+
+Edit the post-to-insgram or create a new post-to-instagram-via-fb that can post content and media files to insgram using FB access token and FB resumable upload
+
+The media files thus are available locally and upload to a meta server via FB's resumable upload before published to insgram account.
+
+## v1.20.0 - Post FB comment
+
+Modify post-to-fb script, its github action files and corresponding CLI option to support posting FB comment instead of new post/reel
+
+**Condition**: if `--fb-post-id <fb post id>` is provided (or equivalent GH action input/variable)
+
+**Supported content**: Text and/or link and/or or media
+
+**Optional**: Support scheduling if possible.
+
+## v1.21.0 - Update Post FB comment, Update youtube: Consider empty, "N/A" and "N/A" variations (e.g. "n.a", "n/a", "not applicable"...) empty when determining if the FB POST ID or YOUTUBE VIDEO ID valid Post
+
+## v1.22.0 - Post Reel to FB page: Supporting Reel title
+
+When posting Video files to FB page (i.e. reel), accept the video's title from `--post-title` option or equivalent Github input and variable settings.
+
+If the video's title is not provided, leave it blank when schedule or publish the video.
+
+## v1.23.0 - Expand the list of image and video extensions to include more popular extensions.
+
+For examples, on `post-to-facebook/post_to_facebook.py#L473`, the image extensions are limited to just '.jpg', '.jpeg', '.png', '.gif' while missing `.webp` which is also popular.
+
+Similarly, video extension area also missing out on several other popular extensions such as `.wmv`, '.mpg`...
+
+Expectation:
+- Implement the above requirements 
+- Create unit tests for the changes 
+- Then run the tests 
+- If applicable, update the CLI correspondingly to surface the new feature. 
+- Update the Python package-related files to match the new version.
+- Before handover, update all relevant .MD file (in the same action folder, and on the parent folder) documenting the new functionality changes 
+- Update the Python package-related files (__init__.py, pyproject.toml, CHANGELOG.md) to match the new version.
+
+## v1.25.0 - Fix Threads link attachment validation and add retry logic
+
+The `post-to-threads` action encounters intermittent "The post you're trying to publish has an invalid link attachment." errors that usually succeed on retry. This is caused by:
+
+1. **Incorrect link attachment format**: The Threads API expects `link_attachment` as a JSON object with `{"url": "..."}` format, not a raw string
+2. **No link validation**: Missing URL format validation before publishing
+3. **Race conditions**: Links may be temporarily inaccessible during API validation at publish time
+4. **No retry mechanism**: Transient failures are not retried
+
+Requirements:
+- **Link format fix**: Change `link_attachment` parameter to JSON object format when calling Threads API
+- **Link validation**: Implement `validate_link_url()` to validate link is a properly formatted URL (must start with http:// or https://)
+- **Link accessibility check**: Implement `check_link_accessibility()` to pre-check if link is reachable before publishing (with 5s timeout)
+- **Retry logic**: Enhance `publish_media()` method to retry up to 3 times with exponential backoff (2s → 4s → 8s) for transient errors and specific HTTP status codes (429, 5xx)
+- **Enhanced logging**: Add detailed logs for all validation steps and retry attempts
+
+## v1.26.0 - Auto-detect GitHub action DEBUG mode to turn on LOG_LEVEL = DEBUG
+
+Auto-detect GitHub action DEBUG mode to turn on LOG_LEVEL = DEBUG
+
+## v1.27.0 - Implement URL shortener operation
+
+Implement `tlnw:shorten_url(long_url)` operation.
+
+Requires:
+- TLNW (Tellers Network) Client ID: `TLNW_CLIENT_ID` env variable
+- TLNW Client Secret: `TLNW_CLIENT_SECRET` env variable
+
+Process:
+- POST to `https://go.tlnw.uk/shorten` with appropriate `x-client-id` and `x-client-secret` headers, posting `{"url":"<long url>"}`
+- Obtain the shortened URL from the response body e.g. `{"short":"https://go.tlnw.uk/EsMoIJef","created_at":"2026-05-28T03:05:25.827Z","reused":true}` 
+- Return the shortened URL 
+
+Example usage:
+- `@{json.permalink | tlnw:shorten_url}`: pass the value of `json.permalink` through the pipe `|` operator to the `tlnw:shorten_url` function. Return the shortened URL
+
+## v1.28.0 - Introduce the double pipe `||` operator
+
+The `||` operator can be used in all places that the `|` operator is used.
+
+If the LHS is not truthy, the `||` behaves like the `or` function. In this case, the RHS can be an value exppression e.g. `json.attribute`, `'literal string'` and need not be an `or` expression. If the RHS is a function expression (`or` expressioon included), the actual non-truthy value of the LHS is passed to that function expression as it is currently implemented.
+
+But if the LHS value is truthy, then its value is returned immediately instead of passing along to the next expression in the RHS.
+
+
+## v1.29.0 - Increase network timeouts for better reliability
+
+The application encountered intermittent "Read timed out" errors during network operations, particularly during URL shortening and media downloads.
+
+Requirements:
+- **Global Timeout Increase**: Standardize and increase network timeouts from 10 seconds to **30 seconds** for the following operations:
+    - TLNW URL shortening (`tlnw:shorten_url`)
+    - Remote JSON data fetching (`CONTENT_JSON`)
+    - Media file downloads from URLs
+    - Bluesky link metadata and thumbnail fetching
+- **Threads Specific Adjustment**: Increase the Threads link accessibility pre-check timeout from 5 seconds to **15 seconds**.
+- **Test Alignment**: Update all relevant unit tests to expect and verify the new timeout values.
+- **Consistency**: Ensure consistent timeout behavior across all shared utility modules and platform-specific scripts.
+
+
+## v1.30.0 - Create post-to-dailymotion action and CLI command
+
+- Use password/refresh_token OAUTH2 flow: https://developers.dailymotion.com/reference/api-generate-refresh-token
+- Upload video: https://developers.dailymotion.com/docs/upload-videos
+- Use reasonable default for video fields (https://developers.dailymotion.com/reference/video-fields) but requires the following explicitly
+  + is_created_for_kids: true/false
+  + channel: category
+  + description
+  + title
+  + tags: optional
+
+## v1.31.0 - Create post-to-mastodon action and CLI command ✅ COMPLETED
+
+- It should support configurable server address e.g. `me.dm` ✅
+- It should support instant posting as well as scheduled posting ✅
+- It should support text, image, text and image, as well as link sharing ✅
+
+## v1.32.0 - Save post response to json file
+
+- Applicable to ALL current and future social posting action and CLI
+- If `SAVE_RESPONSE` environment variable or `--save-response` option is specified, the response from social site will be save to a `<social>-response.json` file.
+- The following info is saved:
+  + success: true|false
+  + error: brief error, if there were failure in posting
+  + post_id: extracted post or video ID from the social response
+  + post_url: extracted post or video URL if it is available
+
+## v1.33.0 - Support Link-in-comment posting
+
+- Applicable to ALL current and future social posting action and CLI
+- If `LINK_IN_COMMENT` environment variable or `--link-in-comment` option is specified, the CLI/action will post the content (text and/or image and/or video included), then attach the provided link as comment to the post.
+- If `PIN_LINK_COMMENT` environment variable or `--pin-link-comment` option is also specified, pin the link comment so that it stays visible on top of the post.
+- This option does not affect the `SAVE_RESPONSE` implementation where it continues saving the post-content's response to file, not post-comment's response. 
+
+## v1.34.0 - Support text_format_preset_id in FB text post
+
+Support text_format_preset_id in FB post as long as the following condition is met:
+
+- Background posts cannot include images or videos.
+- Facebook Pages Only: Not supported on personal profiles or groups.
+- No Link in post. Supported in Link-in-comment mode
+- 130-character cap on background posts.
+
+The text_format_preset_id as an action input or CLI option
+
+
+## v1.35.0 - Support video posting to Tiktok
+- Support instant and schedule posting
+- Use reasonable default input fields, allow users to override them via action's input or CLI's options
+- Extensive info and debug logging to facilitate troubleshooting
+- Support local-to-tiktok video upload if possible
+- Document all limitation e.g. video lengths, no link in descriptions in the folder README file.
+
+## v1.36.0 - Add overall retry mechanism
+
+Support a retry option, both in the CLI and github action.
+
+The following options are available:
+- If not specified, the network request must fail immediately
+- If `{number of retries}*immediately`, retry immediately, up to the specified number of retries
+- If `{number of retries}*delay(<number of seconds>)`: retry after the specified number of seconds, up to the specified number of retries
+- If `{number of retries}*exp(number of seconds)`: retry with exponential strategy from the based delay, up to the specified number of retries.
+
+This retry option apply to ALL post-to-<social> available, current and future.
+
+## v1.37.0 - Debug and fix tiktok posting
+
+Fix in post_to_tiktok.py: Before building source_info, compute effective_chunk_size = min(chunk_size, video_size). This ensures the declared chunk size never exceeds the actual file size — the same effective value is used for both the
+
+## v1.38.0 - Debug and fix Thread retry
+
+- Root cause #1: `post_to_threads.py` logged "Waiting 2 seconds before publishing" but did not actually call `time.sleep(2)`, causing a race where `threads_publish` could run before the container is fully available.
+- Root cause #2: The global retry helper only retried a fixed status-code list (`408/425/429/5xx`). The Threads transient failure shape (`HTTP 400` with `error_subcode=4279009`, "Media Not Found") was not classified as retryable.
+
+### Fixes implemented
+
+- Added the missing `time.sleep(2)` in `post-to-threads/post_to_threads.py` before `threads_publish`.
+- Updated `common/social_media_utils.py` retry classification:
+  - Keep retrying on existing retryable status codes.
+  - Also retry on `HTTP 400` when API error payload indicates a transient condition:
+    - `error.is_transient == true`, or
+    - known transient Meta subcode `error_subcode == 4279009`.
+
+### Tests added/updated
+
+- Added unit test in `common/test_retry_mechanism.py` to verify `400 + error_subcode=4279009` is retried according to configured `RETRY` policy.
+
+### Expected behavior after fix
+
+- With `RETRY=2*delay(5)`, Threads publish now retries transient "Media Not Found" responses instead of failing immediately.
+- The pre-publish 2-second wait is now real, reducing race-condition frequency before retries are even needed.
+
+## v1.39.0 - Upload video from remote URL if it is specified: Facebook, Instagram, Threads(?)
+
+Presently, posting to FB will download the video file if media file starts with "https://...". If the video is larger than 5MB, the download file.
+
+Given that Facebook, Instagram (and Thread?) supports posting video directly from remote URL, the relevant posting scripts should take advantage of that feature, skip download-and-post and do direct posting instead.
+
+
+
+Expectation:
+- Implement the above requirements including support for the DEBUG mode logging (`LOG_LEVEL = DEBUG and github debug mode) ✅
+- Create unit tests for the changes ✅
+- Then run the tests ✅
+- If applicable, update the CLI correspondingly to surface the new feature. ✅
+- Update the Python package-related files to match the new version e.g. `pyproject.toml`, `common\__init__.py`, `social_cli\__init__.py` ✅
+- Before handover, update all relevant .MD file (in the same action folder, and on the parent folder) documenting the new functionality changes ✅
+- Update the Python package-related files (__init__.py, pyproject.toml, CHANGELOG.md) to match the new version. ✅
+
+
