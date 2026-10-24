@@ -19,6 +19,7 @@ import json
 import math
 import os
 import re
+import shutil
 import subprocess
 import time
 from datetime import datetime, timezone
@@ -30,6 +31,19 @@ from PIL import Image, ImageDraw, ImageFont
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 PROJECTS_DIR = REPO_ROOT / "projects"
+
+
+def _ffmpeg_bin() -> str:
+    found = shutil.which("ffmpeg")
+    if found:
+        return found
+    try:
+        import imageio_ffmpeg
+
+        return imageio_ffmpeg.get_ffmpeg_exe()
+    except Exception:
+        return "ffmpeg"
+
 
 
 def _load_font(size: int, bold: bool = True) -> ImageFont.FreeTypeFont | ImageFont.ImageFont:
@@ -179,21 +193,12 @@ def _ensure_audio_track(narration_text: str, out_audio: Path, target_duration: f
         ok = False
 
     if ok:
-        # Probe actual TTS duration
-        probe = subprocess.run(
-            ["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "default=noprint_wrappers=1:nokey=1", str(raw_tts)],
-            capture_output=True,
-            text=True,
-        )
-        try:
-            dur = max(8.0, min(20.0, float(probe.stdout.strip()) + 0.8))
-        except Exception:
-            dur = target_duration
+        dur = target_duration
 
         # Mix voiceover with subtle cinematic dark-anime drone + hook impact hit
         subprocess.run(
             [
-                "ffmpeg", "-y", "-loglevel", "error",
+                _ffmpeg_bin(), "-y", "-loglevel", "error",
                 "-i", str(raw_tts),
                 "-f", "lavfi", "-i", f"sine=frequency=65:duration={dur}",
                 "-filter_complex",
@@ -210,9 +215,10 @@ def _ensure_audio_track(narration_text: str, out_audio: Path, target_duration: f
     # Pure FFmpeg cinematic dark-synth fallback
     subprocess.run(
         [
-            "ffmpeg", "-y", "-loglevel", "error",
+            _ffmpeg_bin(), "-y", "-loglevel", "error",
             "-f", "lavfi",
-            "-i", f"aevalsrc=0.12*sin(2*PI*110*t)+0.08*sin(2*PI*220*t)*exp(-2*mod(t,3)):s=44100:d={target_duration}",
+            "-i", f"sine=frequency=110:sample_rate=44100:duration={target_duration}",
+            "-af", f"volume=0.14,afade=t=in:st=0:d=0.4,afade=t=out:st={target_duration-1.2}:d=1.2",
             "-c:a", "aac", "-b:a", "128k",
             str(out_audio),
         ],
@@ -411,7 +417,7 @@ def render_anime_reel_project(
     output_mp4 = renders_dir / "final.mp4"
     subprocess.run(
         [
-            "ffmpeg", "-y", "-loglevel", "error",
+            _ffmpeg_bin(), "-y", "-loglevel", "error",
             "-framerate", str(fps),
             "-i", str(frames_dir / "frame_%04d.jpg"),
             "-i", str(audio_path),

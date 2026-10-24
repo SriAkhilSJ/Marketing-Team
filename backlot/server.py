@@ -488,9 +488,17 @@ def _thumbnail_for(source: Path, width: int) -> Optional[Path]:
         import uuid
         tmp = THUMB_CACHE_DIR / f"{key}.{uuid.uuid4().hex[:8]}.tmp.jpg"
         if is_video:
+            import shutil
             import subprocess
+            ffmpeg_exe = shutil.which("ffmpeg")
+            if not ffmpeg_exe:
+                try:
+                    import imageio_ffmpeg
+                    ffmpeg_exe = imageio_ffmpeg.get_ffmpeg_exe()
+                except Exception:
+                    ffmpeg_exe = "ffmpeg"
             result = subprocess.run(
-                ["ffmpeg", "-y", "-loglevel", "error", "-ss", "1.5",
+                [ffmpeg_exe, "-y", "-loglevel", "error", "-ss", "1.5",
                  "-i", str(source), "-frames:v", "1",
                  "-vf", f"scale={width}:-2", str(tmp)],
                 capture_output=True, timeout=30,
