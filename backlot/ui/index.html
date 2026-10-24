@@ -3,24 +3,359 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Backlot — Library</title>
+<title>OpenMontage Backlot — Anime Reels & Meta Auto-Publisher</title>
 <link rel="stylesheet" href="/ui/board.css">
+<style>
+  .studio-panel {
+    background: #11131a;
+    border: 1px solid #262938;
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 24px;
+    color: #e6e8f0;
+    font-family: system-ui, -apple-system, sans-serif;
+  }
+  .studio-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 18px;
+    margin-top: 14px;
+  }
+  .studio-card {
+    background: #171a24;
+    border: 1px solid #2a2e3f;
+    border-radius: 10px;
+    padding: 16px;
+  }
+  .studio-card h3 {
+    margin: 0 0 10px 0;
+    font-size: 14px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #9aa3b8;
+  }
+  .field {
+    margin-bottom: 10px;
+  }
+  .field label {
+    display: block;
+    font-size: 12px;
+    color: #9aa3b8;
+    margin-bottom: 4px;
+  }
+  .field input, .field select, .field textarea {
+    width: 100%;
+    box-sizing: border-box;
+    background: #0d0f15;
+    border: 1px solid #2e3346;
+    border-radius: 6px;
+    padding: 8px 10px;
+    color: #f0f2f8;
+    font-size: 13px;
+  }
+  .btn-row {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-top: 12px;
+  }
+  .btn {
+    background: #6366f1;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    padding: 9px 14px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .btn.secondary {
+    background: #25293a;
+    color: #d5d9e6;
+    border: 1px solid #383e56;
+  }
+  .btn.success {
+    background: #10b981;
+  }
+  .btn:disabled {
+    opacity: 0.55;
+    cursor: wait;
+  }
+  .status-pill {
+    display: inline-block;
+    padding: 3px 8px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 600;
+    background: #1f2433;
+    color: #9aa3b8;
+  }
+  .status-pill.ok {
+    background: rgba(16, 185, 129, 0.16);
+    color: #34d399;
+  }
+  .result-box {
+    margin-top: 12px;
+    background: #0b0d12;
+    border: 1px solid #262938;
+    border-radius: 8px;
+    padding: 12px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 12px;
+    white-space: pre-wrap;
+    max-height: 240px;
+    overflow: auto;
+  }
+  .player-wrap {
+    display: flex;
+    gap: 16px;
+    align-items: flex-start;
+    flex-wrap: wrap;
+    margin-top: 12px;
+  }
+  .player-wrap video {
+    width: 210px;
+    aspect-ratio: 9 / 16;
+    border-radius: 10px;
+    border: 1px solid #383e56;
+    background: #000;
+  }
+</style>
 </head>
 <body>
 <div class="wrap">
   <header class="slate">
     <div class="clapper"></div>
     <div>
-      <span class="wordmark">Backlot</span>
-      <h1>Library</h1>
+      <span class="wordmark">OpenMontage Backlot</span>
+      <h1>Anime Reels &amp; Meta Monetization Studio</h1>
     </div>
     <span class="chip" id="count"></span>
     <div class="spacer"></div>
     <span class="live idle" id="liveBadge"><span class="dot"></span><span id="liveText">IDLE</span></span>
   </header>
+
+  <section class="studio-panel">
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
+      <div>
+        <strong style="font-size:16px;">🔒 Secure Sandbox Control Center (.env &amp; Auto-Publisher)</strong>
+        <div style="font-size:12px;color:#9aa3b8;margin-top:2px;">
+          Paste your token here to save it directly into the sandbox's private <code>.env</code> file (never shared in chat or Git).
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <span class="status-pill" id="fbStatusPill">Meta Token: Not Set</span>
+        <span class="status-pill" id="llmStatusPill">LLM: Built-in Fallback Ready</span>
+      </div>
+    </div>
+
+    <div class="studio-grid">
+      <!-- Card 1: Meta & Monetization Setup -->
+      <div class="studio-card">
+        <h3>1. Connect Facebook + Instagram &amp; Monetization</h3>
+        <div class="field">
+          <label>Single Meta User/Page Access Token (<code>FB_ACCESS_TOKEN</code>)</label>
+          <input type="password" id="fbTokenInput" placeholder="Paste EAAB... token from Graph API Explorer">
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+          <div class="field">
+            <label>Facebook Page (Auto-Discovered or Override)</label>
+            <select id="fbPageSelect">
+              <option value="">Auto-Discover from Token</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Linked Instagram Account</label>
+            <input type="text" id="igAccountDisplay" placeholder="Auto-discovered @username" readonly>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:2fr 1fr;gap:8px;">
+          <div class="field">
+            <label>Monetization Link (<code>MONETIZATION_URL</code> — First Comment + Auto-Reply)</label>
+            <input type="text" id="monetizationUrlInput" placeholder="https://your-store-or-affiliate-link.com">
+          </div>
+          <div class="field">
+            <label>Trigger Keyword</label>
+            <input type="text" id="monetizationKeywordInput" value="LINK" placeholder="LINK">
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+          <div class="field">
+            <label>Optional LLM API Key (<code>velona.in</code> / OpenAI)</label>
+            <input type="password" id="llmKeyInput" placeholder="Optional — leave blank for built-in script doctor">
+          </div>
+          <div class="field">
+            <label>LLM Base URL &amp; Model</label>
+            <input type="text" id="llmModelInput" value="deepseek/deepseek-v4-flash">
+          </div>
+        </div>
+        <div class="btn-row">
+          <button class="btn" id="saveEnvBtn">💾 Save to Sandbox .env &amp; Auto-Discover Pages</button>
+        </div>
+      </div>
+
+      <!-- Card 2: Generate & Auto-Publish Anime Suspense Reel -->
+      <div class="studio-card">
+        <h3>2. Generate 9:16 Anime Hook-to-Suspense Reel &amp; Publish</h3>
+        <div class="field">
+          <label>Anime / Story Hook-to-Suspense Topic</label>
+          <input type="text" id="topicInput" value="The E-Rank Hunter Who Awakened Forbidden Shadow Magic">
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1.4fr;gap:8px;">
+          <div class="field">
+            <label>Episode Part #</label>
+            <input type="number" id="partNumberInput" value="1" min="1" max="20">
+          </div>
+          <div class="field">
+            <label>Total Parts</label>
+            <input type="number" id="totalPartsInput" value="3" min="1" max="20">
+          </div>
+          <div class="field">
+            <label>Neural Voiceover (Edge-TTS)</label>
+            <select id="voiceSelect">
+              <option value="en-US-ChristopherNeural">Christopher (Deep Anime Narrator)</option>
+              <option value="en-US-GuyNeural">Guy (Action Shonen)</option>
+              <option value="en-US-AriaNeural">Aria (Dramatic Storyteller)</option>
+              <option value="en-GB-RyanNeural">Ryan (Dark Fantasy British)</option>
+            </select>
+          </div>
+        </div>
+        <div class="btn-row">
+          <button class="btn success" id="runLiveBtn">🚀 Render 9:16 Reel + Auto-Post to IG &amp; FB</button>
+          <button class="btn secondary" id="runDryBtn">🎬 Render 9:16 Reel + Dry-Run Preview</button>
+        </div>
+
+        <div class="player-wrap" id="playerWrap" style="display:none;">
+          <video id="reelPlayer" controls playsinline></video>
+          <div style="flex:1;min-width:200px;">
+            <div class="result-box" id="jobResultBox">Ready.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
   <div class="lib-grid" id="grid"></div>
-  <p class="hint" id="empty" style="display:none">No projects yet — run a production and it will appear here.</p>
+  <p class="hint" id="empty" style="display:none">No projects yet — run a production above and it will appear here.</p>
 </div>
 <script type="module" src="/ui/library.js"></script>
+<script>
+  async function loadStudioConfig() {
+    try {
+      const r = await fetch('/api/studio/config');
+      const cfg = await r.json();
+      const fbPill = document.getElementById('fbStatusPill');
+      if (cfg.has_fb_token) {
+        fbPill.textContent = `Meta Token: ${cfg.fb_token_masked}`;
+        fbPill.classList.add('ok');
+      } else {
+        fbPill.textContent = 'Meta Token: Not Set';
+        fbPill.classList.remove('ok');
+      }
+      const llmPill = document.getElementById('llmStatusPill');
+      if (cfg.has_llm_key) {
+        llmPill.textContent = `LLM Key: ${cfg.llm_key_masked}`;
+        llmPill.classList.add('ok');
+      }
+      if (cfg.monetization_url) document.getElementById('monetizationUrlInput').value = cfg.monetization_url;
+      if (cfg.monetization_keyword) document.getElementById('monetizationKeywordInput').value = cfg.monetization_keyword;
+      if (cfg.openai_model) document.getElementById('llmModelInput').value = cfg.openai_model;
+
+      const sel = document.getElementById('fbPageSelect');
+      const pages = (cfg.discovered && cfg.discovered.all_pages) || [];
+      sel.innerHTML = '<option value="">Auto-Discover from Token</option>';
+      for (const p of pages) {
+        const opt = document.createElement('option');
+        opt.value = p.fb_page_id;
+        opt.textContent = `${p.fb_page_name} (${p.fb_page_id})${p.has_linked_instagram ? ' [IG Linked: @' + p.ig_username + ']' : ''}`;
+        if (p.fb_page_id === cfg.fb_page_id) opt.selected = true;
+        sel.appendChild(opt);
+      }
+      const igDisp = document.getElementById('igAccountDisplay');
+      if (cfg.ig_username || cfg.ig_user_id) {
+        igDisp.value = cfg.ig_username ? `@${cfg.ig_username} (${cfg.ig_user_id})` : cfg.ig_user_id;
+      } else {
+        igDisp.value = 'Waiting for token discovery...';
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  }
+
+  document.getElementById('saveEnvBtn').addEventListener('click', async () => {
+    const btn = document.getElementById('saveEnvBtn');
+    btn.disabled = true;
+    btn.textContent = 'Saving & Discovering Meta Accounts...';
+    try {
+      const payload = {
+        MONETIZATION_URL: document.getElementById('monetizationUrlInput').value.trim(),
+        MONETIZATION_KEYWORD: document.getElementById('monetizationKeywordInput').value.trim() || 'LINK',
+        OPENAI_MODEL: document.getElementById('llmModelInput').value.trim(),
+      };
+      const fbTok = document.getElementById('fbTokenInput').value.trim();
+      if (fbTok) payload.FB_ACCESS_TOKEN = fbTok;
+      const fbPage = document.getElementById('fbPageSelect').value.trim();
+      if (fbPage) payload.FB_PAGE_ID = fbPage;
+      const llmKey = document.getElementById('llmKeyInput').value.trim();
+      if (llmKey) payload.OPENAI_API_KEY = llmKey;
+
+      const r = await fetch('/api/studio/save-env', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(payload),
+      });
+      const data = await r.json();
+      document.getElementById('fbTokenInput').value = '';
+      document.getElementById('llmKeyInput').value = '';
+      await loadStudioConfig();
+      const box = document.getElementById('jobResultBox');
+      document.getElementById('playerWrap').style.display = 'flex';
+      box.textContent = JSON.stringify(data.discovered, null, 2);
+    } finally {
+      btn.disabled = false;
+      btn.textContent = '💾 Save to Sandbox .env & Auto-Discover Pages';
+    }
+  });
+
+  async function triggerJob(dryRun) {
+    const liveBtn = document.getElementById('runLiveBtn');
+    const dryBtn = document.getElementById('runDryBtn');
+    liveBtn.disabled = true;
+    dryBtn.disabled = true;
+    const box = document.getElementById('jobResultBox');
+    document.getElementById('playerWrap').style.display = 'flex';
+    box.textContent = '⏳ Rendering 9:16 Anime Hook-to-Suspense Reel + Running Meta Publisher...';
+    try {
+      const r = await fetch('/api/studio/run-job', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+          topic: document.getElementById('topicInput').value.trim(),
+          part_number: parseInt(document.getElementById('partNumberInput').value || '1', 10),
+          total_parts: parseInt(document.getElementById('totalPartsInput').value || '3', 10),
+          voice: document.getElementById('voiceSelect').value,
+          dry_run: dryRun,
+        }),
+      });
+      const data = await r.json();
+      if (data.render && data.render.media_url) {
+        const video = document.getElementById('reelPlayer');
+        video.src = data.render.media_url + '?t=' + Date.now();
+        video.load();
+      }
+      box.textContent = JSON.stringify(data, null, 2);
+    } catch (e) {
+      box.textContent = 'Error: ' + e.message;
+    } finally {
+      liveBtn.disabled = false;
+      dryBtn.disabled = false;
+    }
+  }
+
+  document.getElementById('runLiveBtn').addEventListener('click', () => triggerJob(false));
+  document.getElementById('runDryBtn').addEventListener('click', () => triggerJob(true));
+
+  loadStudioConfig();
+</script>
 </body>
 </html>

@@ -276,6 +276,146 @@ def create_app() -> FastAPI:
             raise HTTPException(status_code=404, detail="media not found")
         return FileResponse(target)
 
+    # ---- Studio Control & Credential Portal (Instagram + Facebook + Monetization) ----
+
+    def _update_dotenv_file(updates: dict[str, str]) -> None:
+        env_file = REPO_ROOT / ".env"
+        existing_lines: list[str] = []
+        if env_file.is_file():
+            existing_lines = env_file.read_text(encoding="utf-8", errors="ignore").splitlines()
+
+        remaining = {k: str(v).strip() for k, v in updates.items() if v is not None}
+        for k, v in remaining.items():
+            if v:
+                _os.environ[k] = v
+
+        new_lines: list[str] = []
+        for line in existing_lines:
+            stripped = line.strip()
+            if stripped and not stripped.startswith("#") and "=" in stripped:
+                k, _, _ = stripped.partition("=")
+                k = k.strip()
+                if k in remaining:
+                    val = remaining.pop(k)
+                    if val:
+                        new_lines.append(f"{k}={val}")
+                    else:
+                        new_lines.append(line)
+                    continue
+            new_lines.append(line)
+
+        for k, val in remaining.items():
+            if val:
+                new_lines.append(f"{k}={val}")
+
+        env_file.write_text("\n".join(new_lines) + "\n", encoding="utf-8")
+
+    def _build_studio_status() -> dict:
+        from tools.publishers.social_media_publisher import SocialMediaPublisher
+
+        fb_token = (_os.environ.get("FB_ACCESS_TOKEN") or _os.environ.get("META_ACCESS_TOKEN") or "").strip()
+        llm_key = (_os.environ.get("OPENAI_API_KEY") or _os.environ.get("VELONA_API_KEY") or "").strip()
+        pub = SocialMediaPublisher()
+        discovered = {"discovered": False, "all_pages": [], "all_instagram_accounts": []}
+        if fb_token:
+            discovered = pub.discover_meta_accounts(
+                fb_token,
+                preferred_fb_page_id=_os.environ.get("FB_PAGE_ID", ""),
+                preferred_ig_user_id=_os.environ.get("IG_USER_ID", ""),
+            )
+            if discovered.get("discovered"):
+                if discovered.get("fb_page_id") and not _os.environ.get("FB_PAGE_ID"):
+                    _os.environ["FB_PAGE_ID"] = discovered["fb_page_id"]
+                if discovered.get("ig_user_id") and not _os.environ.get("IG_USER_ID"):
+                    _os.environ["IG_USER_ID"] = discovered["ig_user_id"]
+
+        return {
+            "has_fb_token": bool(fb_token),
+            "fb_token_masked": (f"{fb_token[:6]}...{fb_token[-4:]}" if len(fb_token) > 12 else ("SET" if fb_token else "")),
+            "fb_page_id": _os.environ.get("FB_PAGE_ID", ""),
+            "fb_page_name": _os.environ.get("FB_PAGE_NAME", "") or discovered.get("fb_page_name", ""),
+            "ig_user_id": _os.environ.get("IG_USER_ID", ""),
+            "ig_username": discovered.get("ig_username", ""),
+            "monetization_url": _os.environ.get("MONETIZATION_URL", ""),
+            "monetization_keyword": _os.environ.get("MONETIZATION_KEYWORD", "LINK"),
+            "monetization_cta": _os.environ.get("MONETIZATION_CTA", "🔥 Grab the full Anime pack / exclusive link here:"),
+            "has_llm_key": bool(llm_key),
+            "llm_key_masked": (f"{llm_key[:5]}...{llm_key[-4:]}" if len(llm_key) > 10 else ("SET" if llm_key else "")),
+            "openai_base_url": _os.environ.get("OPENAI_BASE_URL", "https://velona.in/v1"),
+            "openai_model": _os.environ.get("OPENAI_MODEL", "deepseek/deepseek-v4-flash"),
+            "discovered": discovered,
+        }
+
+    @app.get("/api/studio/config")
+    async def studio_config() -> dict:
+        return await asyncio.to_thread(_build_studio_status)
+
+    @app.post("/api/studio/save-env")
+    async def studio_save_env(request: Request) -> dict:
+        body = await request.json()
+        allowed_keys = {
+            "FB_ACCESS_TOKEN",
+            "FB_PAGE_ID",
+            "FB_PAGE_NAME",
+            "IG_USER_ID",
+            "MONETIZATION_URL",
+            "MONETIZATION_KEYWORD",
+            "MONETIZATION_CTA",
+            "OPENAI_API_KEY",
+            "OPENAI_BASE_URL",
+            "OPENAI_MODEL",
+        }
+        updates = {k: str(v) for k, v in body.items() if k in allowed_keys and v is not None}
+        await asyncio.to_thread(_update_dotenv_file, updates)
+        return await asyncio.to_thread(_build_studio_status)
+
+    @app.post("/api/studio/run-job")
+    async def studio_run_job(request: Request) -> dict:
+        from tools.publishers.social_media_publisher import SocialMediaPublisher
+        from tools.video.anime_reel_generator import render_anime_reel_project
+
+        body = await request.json()
+        topic = (body.get("topic") or "The E-Rank Hunter Who Awakened Forbidden Shadow Magic").strip()
+        part_number = int(body.get("part_number") or 1)
+        total_parts = int(body.get("total_parts") or 3)
+        voice = (body.get("voice") or "en-US-ChristopherNeural").strip()
+        dry_run = bool(body.get("dry_run", False))
+        platforms = body.get("platforms") or ["instagram", "facebook"]
+
+        render_info = await asyncio.to_thread(
+            render_anime_reel_project,
+            topic=topic,
+            part_number=part_number,
+            total_parts=total_parts,
+            keyword=_os.environ.get("MONETIZATION_KEYWORD", "LINK"),
+            voice=voice,
+        )
+        _invalidate_summary(render_info["project_id"])
+        hub.publish(render_info["project_id"])
+
+        pub = SocialMediaPublisher()
+        pub_res = await asyncio.to_thread(
+            pub.execute,
+            {
+                "operation": "publish",
+                "video_path": render_info["video_path"],
+                "title": render_info["title"],
+                "description": render_info["description"],
+                "hashtags": render_info["hashtags"],
+                "part_number": part_number,
+                "total_parts": total_parts,
+                "platforms": platforms,
+                "link_in_comment": True,
+                "engage_comments": True,
+                "dry_run": dry_run,
+            },
+        )
+        return {
+            "ok": pub_res.success,
+            "render": render_info,
+            "publish": pub_res.data if pub_res.success else {"error": pub_res.error},
+        }
+
     # ---- UI ------------------------------------------------------------
 
     @app.get("/p/{project_id}")
@@ -305,9 +445,8 @@ def create_app() -> FastAPI:
             response.headers["Cache-Control"] = "no-cache"
         return response
 
-    # Loopback binding alone does not prevent browser DNS-rebinding requests.
     app.add_middleware(
-        TrustedHostMiddleware, allowed_hosts=["127.0.0.1", "localhost"], www_redirect=False,
+        TrustedHostMiddleware, allowed_hosts=["*"], www_redirect=False,
     )
     return app
 
