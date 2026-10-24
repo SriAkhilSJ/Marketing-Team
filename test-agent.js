@@ -104,6 +104,10 @@ async function runAllTests() {
   assert.ok(mp4Stat.size > 50000, "MP4 video file size is unexpectedly small");
   assert.strictEqual(reel.carouselUrls.length, 4, "Should render 4 Carousel PNG slides");
   assert.ok(reel.remotionCode.includes("export const AutonomousCodeReel"), "Remotion .tsx code invalid");
+  assert.ok(
+    !reel.scenes[0].headline.includes("Stop Using Static AI Slideshows"),
+    "Scene 1 headline should dynamically reflect customTopic, not a hardcoded static fallback"
+  );
 
   const memAfterReel = loadMemoryStore();
   const remembered = memAfterReel.episodicPostsMemory.some((e) => e.id === reel.id);
@@ -123,14 +127,28 @@ async function runAllTests() {
   assert.strictEqual(cycle.cycleSteps.length, 4, "Autopilot cycle should complete all 4 steps");
   console.log(`  ✅ PASS: Full Autopilot Cycle Published Reel "${cycle.reelItem.id}" to Linked Instagram + Facebook Page\n`);
 
-  // TEST 7: Live Web UI Server HTTP Health Check (if server is running on port 3000)
-  console.log("▶ [TEST 7/7] Checking Live Web UI Server (/api/state & /api/memory)...");
+  // TEST 7: Live Web UI Server HTTP Health Check (/api/config, /api/voices, /api/state)
+  console.log("▶ [TEST 7/7] Checking Live Web UI Server (/api/config, /api/voices, /api/state)...");
   try {
-    const res = await fetch("http://127.0.0.1:3000/api/state");
-    assert.strictEqual(res.status, 200, "/api/state did not return 200");
-    const json = await res.json();
-    assert.ok(json.ok && json.memoryStore, "/api/state payload missing memoryStore");
-    console.log("  ✅ PASS: Live Web UI Server on Port 3000 responded 200 OK with full state + RAG memory\n");
+    const [cfgRes, voicesRes, stateRes] = await Promise.all([
+      fetch("http://127.0.0.1:3000/api/config"),
+      fetch("http://127.0.0.1:3000/api/voices"),
+      fetch("http://127.0.0.1:3000/api/state")
+    ]);
+    assert.strictEqual(cfgRes.status, 200, "/api/config did not return 200");
+    assert.strictEqual(voicesRes.status, 200, "/api/voices did not return 200");
+    assert.strictEqual(stateRes.status, 200, "/api/state did not return 200");
+
+    const cfgJson = await cfgRes.json();
+    const stateJson = await stateRes.json();
+    assert.ok(
+      cfgJson.ok && Array.isArray(cfgJson.videoStyles) && Array.isArray(cfgJson.settingsSchema),
+      "/api/config missing videoStyles or settingsSchema"
+    );
+    assert.ok(stateJson.ok && stateJson.memoryStore, "/api/state payload missing memoryStore");
+    console.log(
+      `  ✅ PASS: Live Web UI Server responded 200 OK (/api/config: ${cfgJson.videoStyles.length} styles, ${cfgJson.settingsSchema.length} schema sections, ${cfgJson.voices.length} voices)\n`
+    );
   } catch (err) {
     console.log(`  ℹ️ Note: Server check skipped (${err.message})\n`);
   }

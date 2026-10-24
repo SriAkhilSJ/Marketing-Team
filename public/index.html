@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Autonomous AI Reels & Posts Agent — Velona.in + Meta Graph Studio</title>
+  <title>Autonomous AI Reels & Posts Agent — Dynamic Studio</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600;700&display=swap');
@@ -37,7 +37,7 @@
   </style>
 </head>
 <body class="min-h-screen antialiased selection:bg-cyan-500 selection:text-slate-950">
-  <!-- Top Header -->
+  <!-- Top Header (Populated dynamically from /api/config) -->
   <header class="sticky top-0 z-30 border-b border-slate-800/80 bg-slate-950/90 backdrop-blur-md">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 py-3.5 flex flex-wrap items-center justify-between gap-3">
       <div class="flex items-center gap-3">
@@ -46,16 +46,10 @@
         </div>
         <div>
           <div class="flex items-center gap-2">
-            <h1 class="font-extrabold text-base sm:text-lg tracking-tight text-white">
-              Marketing-Team // Autonomous Reels & Posts Agent
-            </h1>
-            <span class="px-2 py-0.5 text-[11px] font-bold rounded-full bg-cyan-500/15 text-cyan-300 border border-cyan-500/30">
-              Code-to-Video Engine
-            </span>
+            <h1 id="appTitle" class="font-extrabold text-base sm:text-lg tracking-tight text-white"></h1>
+            <span id="appBadge" class="px-2 py-0.5 text-[11px] font-bold rounded-full bg-cyan-500/15 text-cyan-300 border border-cyan-500/30"></span>
           </div>
-          <p class="text-xs text-slate-400">
-            1 Text Key (<span class="text-cyan-400 font-semibold">velona.in</span>) • 1 Facebook Token (<span class="text-emerald-400 font-semibold">Auto-Links Instagram</span>) • Profile Audit → Code Reel → Auto-Post & DM
-          </p>
+          <p id="appSubtitle" class="text-xs text-slate-400"></p>
         </div>
       </div>
 
@@ -83,64 +77,21 @@
     </div>
   </header>
 
-  <!-- Main Content Container -->
   <main class="max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-6">
-    <!-- Status Banner -->
+    <!-- Status Toast -->
     <div id="statusToast" class="hidden rounded-xl p-3.5 text-sm font-medium border bg-cyan-950/60 border-cyan-500/40 text-cyan-200 flex items-center justify-between">
-      <span id="statusToastText">Working...</span>
+      <span id="statusToastText"></span>
       <button onclick="document.getElementById('statusToast').classList.add('hidden')" class="text-xs underline ml-4">Dismiss</button>
     </div>
 
-    <!-- Top Connection & KPI Strip -->
-    <section class="grid grid-cols-1 md:grid-cols-4 gap-4">
-      <div class="glass rounded-2xl p-4">
-        <div class="flex items-center justify-between text-xs text-slate-400 mb-1">
-          <span>AI ENGINE (VELONA.IN)</span>
-          <span id="velonaBadge" class="px-2 py-0.5 rounded-full text-[11px] font-bold bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">Ready</span>
-        </div>
-        <div id="activeModelLabel" class="font-bold text-sm text-white truncate">anthropic/claude-sonnet-4-6</div>
-        <p id="velonaStatusText" class="text-xs text-slate-400 mt-1 line-clamp-2">OpenAI-compatible /v1 + Native INR Gateway</p>
-      </div>
+    <!-- Dynamic KPI Strip (Rendered from uiConfig.kpiSchema) -->
+    <section id="kpiGrid" class="grid grid-cols-1 md:grid-cols-4 gap-4"></section>
 
-      <div class="glass rounded-2xl p-4">
-        <div class="flex items-center justify-between text-xs text-slate-400 mb-1">
-          <span>FB PAGE ➔ LINKED INSTAGRAM</span>
-          <span id="metaBadge" class="px-2 py-0.5 rounded-full text-[11px] font-bold bg-sky-500/15 text-sky-300 border border-sky-500/30">Single Auth</span>
-        </div>
-        <div id="connectedAccountsLabel" class="font-bold text-sm text-white truncate">@ai.wealth.builder</div>
-        <p id="metaStatusText" class="text-xs text-slate-400 mt-1 line-clamp-2">1 Facebook Page Token controls both FB & IG Reels</p>
-      </div>
-
-      <div class="glass rounded-2xl p-4">
-        <div class="flex items-center justify-between text-xs text-slate-400 mb-1">
-          <span>PROFILE SAVE / SHARE SCORE</span>
-          <span class="text-cyan-400 font-mono text-xs font-bold">2026 Algo 3x Weight</span>
-        </div>
-        <div class="flex items-baseline gap-3">
-          <span id="kpiViews" class="text-2xl font-black text-white">157,000</span>
-          <span class="text-xs text-emerald-400 font-semibold" id="kpiSaveRate">6.5% Saves</span>
-        </div>
-        <p class="text-xs text-slate-400 mt-1">Code-to-Video beats static slideshows by <strong class="text-white">14.2x</strong></p>
-      </div>
-
-      <div class="glass rounded-2xl p-4 border-emerald-500/30">
-        <div class="flex items-center justify-between text-xs text-slate-400 mb-1">
-          <span>COMMENT ➔ AUTO-DM REVENUE</span>
-          <span id="triggerKeywordBadge" class="px-2 py-0.5 rounded-full text-[11px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">Trigger: "AUTO"</span>
-        </div>
-        <div class="flex items-baseline gap-2">
-          <span id="kpiRevenue" class="text-2xl font-black text-emerald-400">₹50,850</span>
-          <span id="kpiLeads" class="text-xs text-slate-300 font-semibold">(1,019 DM Leads)</span>
-        </div>
-        <p class="text-xs text-slate-400 mt-1" id="pendingLeadsHint">Pending comment leads ready for Auto-DM</p>
-      </div>
-    </section>
-
-    <!-- Main 2-Column Workspace: Left = Profile Analysis & Autonomous Actions | Right = Code-to-Video Studio & Player -->
+    <!-- Main 2-Column Workspace -->
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
-      <!-- LEFT COLUMN (7 cols): Profile Content Analyzer + Autonomous Action Queue + Comment Funnel -->
+      <!-- LEFT COLUMN (7 cols): Profile Audit + Actions + Comment Funnel + Memory/RAG Vault -->
       <div class="lg:col-span-7 space-y-6">
-        <!-- 1. Profile Content Analysis Card -->
+        <!-- Step 1: Profile Content Analysis -->
         <div class="glass rounded-2xl p-5 space-y-4">
           <div class="flex flex-wrap items-center justify-between gap-2">
             <div>
@@ -156,7 +107,6 @@
             </button>
           </div>
 
-          <!-- AI Diagnosis Box -->
           <div class="rounded-xl p-4 bg-slate-900/90 border border-slate-800 space-y-2">
             <div class="flex items-center justify-between text-xs">
               <span class="font-bold text-emerald-400">🧠 Agent Diagnosis & Strategy Prescription</span>
@@ -176,7 +126,6 @@
             </div>
           </div>
 
-          <!-- Recent Profile Posts Audit Table -->
           <div>
             <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2.5">
               Recent IG & FB Posts Audited by Agent
@@ -185,7 +134,7 @@
           </div>
         </div>
 
-        <!-- 2. Autonomous Action Plan ("Take Actions") -->
+        <!-- Step 2: Autonomous Actions Queue -->
         <div class="glass rounded-2xl p-5 space-y-4">
           <div class="flex flex-wrap items-center justify-between gap-2">
             <div>
@@ -194,11 +143,10 @@
             </div>
             <span class="text-xs text-slate-400">Click any action or run full autopilot</span>
           </div>
-
           <div id="actionsQueueContainer" class="space-y-2.5"></div>
         </div>
 
-          <!-- 3. Comment-to-DM Monetization Funnel -->
+        <!-- Step 3: Comment-to-DM Monetization Funnel -->
         <div class="glass rounded-2xl p-5 space-y-4">
           <div class="flex flex-wrap items-center justify-between gap-2">
             <div>
@@ -214,7 +162,6 @@
             </button>
           </div>
 
-          <!-- Simulate Incoming Viewer Comment -->
           <div class="flex flex-wrap sm:flex-nowrap gap-2 bg-slate-900/80 p-2.5 rounded-xl border border-slate-800">
             <input
               id="simCommentUser"
@@ -241,23 +188,16 @@
           <div id="commentsListContainer" class="space-y-2 max-h-72 overflow-y-auto pr-1"></div>
         </div>
 
-        <!-- 4. Persistent Memory & RAG Knowledge Vault -->
+        <!-- Step 4: Persistent Memory & RAG Knowledge Vault -->
         <div id="memoryRagSection" class="glass rounded-2xl p-5 space-y-4 border-indigo-500/30">
           <div class="flex flex-wrap items-center justify-between gap-2">
             <div>
               <span class="text-[11px] font-bold uppercase tracking-wider text-indigo-400">Step 4 • Persistent Brain (RAG + Episodic Memory)</span>
               <h2 class="text-lg font-extrabold text-white">🧠 Memory & RAG Knowledge Vault</h2>
             </div>
-            <span id="memorySessionBadge" class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-indigo-500/15 text-indigo-300 border border-indigo-500/30 mono">
-              Session: mem_marketing_team_agent
-            </span>
+            <span id="memorySessionBadge" class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-indigo-500/15 text-indigo-300 border border-indigo-500/30 mono"></span>
           </div>
 
-          <p class="text-xs text-slate-400">
-            The agent remembers every past Reel, hook, performance metric, and contacted user, plus retrieves relevant facts from your <strong>RAG Knowledge Base</strong> before writing new scripts so it <strong>never repeats content</strong>.
-          </p>
-
-          <!-- Live RAG Retrieval & Anti-Duplicate Hook Tester -->
           <div class="p-3.5 rounded-xl bg-slate-900/90 border border-slate-800 space-y-2.5">
             <div class="text-xs font-bold text-indigo-300">🔎 Test RAG Retrieval & Anti-Duplicate Hook Guard</div>
             <div class="flex flex-wrap sm:flex-nowrap gap-2">
@@ -278,7 +218,6 @@
             <div id="ragQueryResultBox" class="hidden p-3 rounded-lg bg-slate-950 border border-indigo-500/30 text-xs space-y-1.5"></div>
           </div>
 
-          <!-- Add New Knowledge Document to RAG -->
           <div class="p-3.5 rounded-xl bg-slate-900/90 border border-slate-800 space-y-2.5">
             <div class="text-xs font-bold text-cyan-300">➕ Teach Agent New Knowledge / Brand Fact / Offer (Added to RAG)</div>
             <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
@@ -291,12 +230,7 @@
               <select
                 id="kbCategoryInput"
                 class="px-2.5 py-1.5 rounded-lg bg-slate-950 border border-slate-800 text-xs text-white"
-              >
-                <option value="monetization">Monetization / Offer</option>
-                <option value="strategy">Hook / Strategy Rule</option>
-                <option value="technical">Product / Tech Spec</option>
-                <option value="faq">Audience FAQ Answer</option>
-              </select>
+              ></select>
             </div>
             <div class="flex flex-wrap sm:flex-nowrap gap-2">
               <input
@@ -314,7 +248,6 @@
             </div>
           </div>
 
-          <!-- Knowledge Base Docs & Episodic Memory Grid -->
           <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div>
               <div class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">
@@ -332,12 +265,12 @@
         </div>
       </div>
 
-      <!-- RIGHT COLUMN (5 cols): Claude Code-to-Video Generator & Live 9:16 Reel Player -->
+      <!-- RIGHT COLUMN (5 cols): Dynamic Code-to-Video Studio & Player -->
       <div class="lg:col-span-5 space-y-6">
         <div class="glass rounded-2xl p-5 space-y-4 glow-cyan">
           <div class="flex items-center justify-between">
             <div>
-              <span class="text-[11px] font-bold uppercase tracking-wider text-cyan-400">Claude Code-to-Video Studio</span>
+              <span class="text-[11px] font-bold uppercase tracking-wider text-cyan-400">Code-to-Video Studio</span>
               <h2 class="text-lg font-extrabold text-white">Programmatic 9:16 Reel & Carousel</h2>
             </div>
             <span class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-cyan-500/15 text-cyan-300 border border-cyan-500/30">
@@ -345,7 +278,7 @@
             </span>
           </div>
 
-          <!-- Custom Topic / Style Generator Controls -->
+          <!-- Dynamic Controls (Populated from /api/config & /api/voices) -->
           <div class="bg-slate-900/90 p-3.5 rounded-xl border border-slate-800 space-y-3">
             <div>
               <label class="block text-xs font-semibold text-slate-300 mb-1">
@@ -354,38 +287,30 @@
               <input
                 id="customTopicInput"
                 type="text"
-                placeholder="e.g., How my AI Agent audits my IG profile & writes 60fps Reels in code..."
+                placeholder="e.g., How AI generates Instagram Reels automatically from code..."
                 class="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-800 text-xs text-white focus:border-cyan-400 outline-none"
               />
             </div>
 
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5 items-end">
               <div>
                 <label class="block text-xs font-semibold text-slate-300 mb-1">Code-to-Video Style</label>
                 <select
                   id="videoStyleSelect"
                   class="w-full px-2.5 py-2 rounded-lg bg-slate-950 border border-slate-800 text-xs text-white"
-                >
-                  <option value="fireship_code">Fireship / Claude Code Terminal</option>
-                  <option value="data_counter">Live ₹ Revenue & Metric Counter</option>
-                  <option value="chat_story">Animated iMessage / DM Story</option>
-                  <option value="minimal_wealth">Dan Koe / Minimalist Motion</option>
-                  <option value="quiz_challenge">Interactive Timer Hook</option>
-                </select>
+                ></select>
               </div>
               <div>
-                <label class="block text-xs font-semibold text-slate-300 mb-1 flex items-center gap-1">
-                  🎙️ Voiceover Voice
-                  <span id="ttsStatusBadge" class="ml-auto px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-slate-700 text-slate-300">loading…</span>
-                </label>
+                <div class="flex items-center justify-between mb-1">
+                  <label class="text-xs font-semibold text-slate-300">🎙️ Voiceover</label>
+                  <span id="ttsStatusBadge"></span>
+                </div>
                 <select
                   id="ttsVoiceSelect"
                   class="w-full px-2.5 py-2 rounded-lg bg-slate-950 border border-slate-800 text-xs text-white"
-                >
-                  <option value="">Loading voices…</option>
-                </select>
+                ></select>
               </div>
-              <div class="flex items-end">
+              <div>
                 <button
                   onclick="generateNewCodeReel()"
                   id="btnGenerateReel"
@@ -397,39 +322,18 @@
             </div>
           </div>
 
-          <!-- Studio Output Tabs -->
-          <div class="flex border-b border-slate-800 text-xs font-bold">
-            <button onclick="switchStudioTab('video')" id="tabBtn_video" class="px-3 py-2 border-b-2 border-cyan-400 text-cyan-300">
-              🎬 9:16 MP4 Reel
-            </button>
-            <button onclick="switchStudioTab('carousel')" id="tabBtn_carousel" class="px-3 py-2 border-b-2 border-transparent text-slate-400 hover:text-white">
-              🖼️ 4-Slide Carousel
-            </button>
-            <button onclick="switchStudioTab('code')" id="tabBtn_code" class="px-3 py-2 border-b-2 border-transparent text-slate-400 hover:text-white">
-              💻 Remotion .tsx Code
-            </button>
-            <button onclick="switchStudioTab('caption')" id="tabBtn_caption" class="px-3 py-2 border-b-2 border-transparent text-slate-400 hover:text-white">
-              📝 Script & Caption
-            </button>
-          </div>
+          <!-- Dynamic Studio Tabs Bar -->
+          <div id="studioTabsBar" class="flex border-b border-slate-800 text-xs font-bold"></div>
 
-          <!-- TAB 1: 9:16 MP4 Video Player -->
+          <!-- TAB: Video -->
           <div id="studioTab_video" class="space-y-3">
             <div class="flex items-center justify-between text-xs">
-              <span id="activeReelTitle" class="font-bold text-white truncate max-w-[260px]">Loading Reel...</span>
-              <span id="activeReelStatus" class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300">READY</span>
+              <span id="activeReelTitle" class="font-bold text-white truncate max-w-[260px]"></span>
+              <span id="activeReelStatus" class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300"></span>
             </div>
 
             <div class="relative mx-auto w-full max-w-[290px] aspect-[9/16] rounded-2xl overflow-hidden border-2 border-slate-700 bg-slate-950 shadow-2xl">
-              <video
-                id="reelVideoPlayer"
-                class="w-full h-full object-cover"
-                controls
-                autoplay
-                muted
-                loop
-                playsinline
-              ></video>
+              <video id="reelVideoPlayer" class="w-full h-full object-cover" controls autoplay muted loop playsinline></video>
             </div>
 
             <div class="flex flex-wrap gap-2 justify-center">
@@ -457,15 +361,12 @@
             </div>
           </div>
 
-          <!-- TAB 2: 4-Slide Carousel -->
+          <!-- TAB: Carousel -->
           <div id="studioTab_carousel" class="hidden space-y-3">
-            <p class="text-xs text-slate-400">
-              Auto-rendered 4:5 Portrait Carousel slides ready for Instagram & Facebook feed posts:
-            </p>
             <div id="carouselGrid" class="grid grid-cols-2 gap-2.5"></div>
           </div>
 
-          <!-- TAB 3: Remotion .tsx Code -->
+          <!-- TAB: Code -->
           <div id="studioTab_code" class="hidden space-y-2">
             <div class="flex items-center justify-between text-xs text-slate-400">
               <span>Generated React / Remotion Component (<code>.tsx</code>)</span>
@@ -474,7 +375,7 @@
             <pre id="remotionCodeBox" class="p-3 rounded-xl bg-slate-950 border border-slate-800 text-[11px] text-cyan-300 overflow-x-auto max-h-[420px]"></pre>
           </div>
 
-          <!-- TAB 4: Script & Caption -->
+          <!-- TAB: Caption -->
           <div id="studioTab_caption" class="hidden space-y-3">
             <div>
               <div class="text-xs font-bold text-slate-400 mb-1">🎙️ Neural Voiceover Script</div>
@@ -486,7 +387,6 @@
             </div>
           </div>
 
-          <!-- Generated Queue Selector -->
           <div class="pt-2 border-t border-slate-800/80">
             <div class="text-xs font-bold text-slate-400 mb-2">Generated Reels Queue</div>
             <div id="reelQueueList" class="space-y-1.5 max-h-40 overflow-y-auto"></div>
@@ -496,709 +396,30 @@
     </div>
   </main>
 
-  <!-- Settings Modal (Velona.in Key + Single Facebook Token + Monetization Funnel) -->
+  <!-- Dynamic Schema-Driven Settings Modal -->
   <div id="settingsModal" class="hidden fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4">
     <div class="glass rounded-2xl max-w-2xl w-full p-6 space-y-5 max-h-[90vh] overflow-y-auto border border-slate-700">
       <div class="flex items-center justify-between border-b border-slate-800 pb-3">
         <div>
-          <h3 class="text-lg font-extrabold text-white">⚙️ Agent Configuration & API Connections</h3>
-          <p class="text-xs text-slate-400">1 Velona.in Text Key + 1 Facebook Page Token (auto-discovers your linked Instagram)</p>
+          <h3 class="text-lg font-extrabold text-white">⚙️ Agent Configuration & Environment Schema</h3>
+          <p class="text-xs text-slate-400">Rendered dynamically from <code>GET /api/config</code> • Persisted to <code>.env</code></p>
         </div>
         <button onclick="toggleSettingsModal(false)" class="text-slate-400 hover:text-white text-xl font-bold">&times;</button>
       </div>
 
-      <div class="space-y-4 text-xs">
-        <!-- Section 1: Velona.in -->
-        <div class="p-4 rounded-xl bg-slate-900/90 border border-slate-800 space-y-3">
-          <div class="font-bold text-cyan-400 uppercase tracking-wider">1. Velona.in OpenAI-Compatible Text API (INR Billed)</div>
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div>
-              <label class="block text-slate-300 font-semibold mb-1">Velona API Key (<code>sk-...</code>)</label>
-              <input id="cfgVelonaKey" type="password" placeholder="sk-..." class="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-800 text-white" />
-            </div>
-            <div>
-              <label class="block text-slate-300 font-semibold mb-1">AI Model (via Velona.in)</label>
-              <select id="cfgLlmModel" class="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-800 text-white"></select>
-            </div>
-          </div>
-          <div>
-            <label class="block text-slate-300 font-semibold mb-1">OpenAI-Compatible Base URL</label>
-            <input id="cfgVelonaBaseUrl" type="text" value="https://velona.in/v1" class="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-800 text-white mono" />
-          </div>
-        </div>
-
-        <!-- Section 2: Facebook -> Linked Instagram -->
-        <div class="p-4 rounded-xl bg-slate-900/90 border border-slate-800 space-y-3">
-          <div class="font-bold text-sky-400 uppercase tracking-wider">2. Facebook Page Connection (Auto-Discovers Linked Instagram)</div>
-          <p class="text-slate-400">
-            Because your Facebook Page is connected to your Instagram Business/Creator account, you only need your <strong>Facebook Page Access Token</strong>. The agent automatically fetches your linked <code>instagram_business_account</code> ID and posts to both!
-          </p>
-          <div>
-            <label class="block text-slate-300 font-semibold mb-1">Facebook Page / User Access Token</label>
-            <input id="cfgFbToken" type="password" placeholder="EAAG..." class="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-800 text-white" />
-          </div>
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div>
-              <label class="block text-slate-300 font-semibold mb-1">Facebook Page ID (Auto-filled if blank)</label>
-              <input id="cfgFbPageId" type="text" placeholder="Auto-discovered from token" class="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-800 text-white" />
-            </div>
-            <div>
-              <label class="block text-slate-300 font-semibold mb-1">Linked Instagram Business ID (Auto-filled)</label>
-              <input id="cfgIgId" type="text" placeholder="Auto-discovered from FB Page" class="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-800 text-white" />
-            </div>
-          </div>
-        </div>
-
-        <!-- Section 3: Monetization & Niche -->
-        <div class="p-4 rounded-xl bg-slate-900/90 border border-slate-800 space-y-3">
-          <div class="font-bold text-emerald-400 uppercase tracking-wider">3. Niche & Comment-to-DM Monetization Funnel</div>
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div>
-              <label class="block text-slate-300 font-semibold mb-1">Niche / Topic Focus</label>
-              <input id="cfgNiche" type="text" class="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-800 text-white" />
-            </div>
-            <div>
-              <label class="block text-slate-300 font-semibold mb-1">Comment Trigger Keyword (e.g. AUTO)</label>
-              <input id="cfgTriggerKeyword" type="text" class="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-800 text-white font-bold" />
-            </div>
-          </div>
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div>
-              <label class="block text-slate-300 font-semibold mb-1">Monetization Offer Name</label>
-              <input id="cfgOfferName" type="text" class="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-800 text-white" />
-            </div>
-            <div>
-              <label class="block text-slate-300 font-semibold mb-1">Payment / Affiliate Link Sent in DM</label>
-              <input id="cfgOfferUrl" type="text" class="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-800 text-white" />
-            </div>
-          </div>
-        </div>
-      </div>
+      <div id="dynamicSettingsForm" class="space-y-4 text-xs"></div>
 
       <div class="flex justify-end gap-2 pt-2">
         <button onclick="toggleSettingsModal(false)" class="px-4 py-2 rounded-xl text-xs font-bold bg-slate-800 text-slate-300">
           Cancel
         </button>
         <button onclick="saveSettings()" class="px-5 py-2 rounded-xl text-xs font-bold bg-gradient-to-r from-cyan-400 to-sky-500 text-slate-950">
-          💾 Save & Auto-Discover Accounts
+          💾 Save to .env & Sync Accounts
         </button>
       </div>
     </div>
   </div>
 
-  <script>
-    let appState = null;
-    let activeReel = null;
-
-    function showToast(msg) {
-      const el = document.getElementById("statusToast");
-      const txt = document.getElementById("statusToastText");
-      txt.textContent = msg;
-      el.classList.remove("hidden");
-    }
-
-    async function fetchState() {
-      const res = await fetch("/api/state");
-      const data = await res.json();
-      if (!data.ok) return;
-      appState = data;
-      renderDashboard();
-    }
-
-    function renderDashboard() {
-      const { settings, velonaStatus, metaStatus, profileSnapshot, analysisReport, contentQueue, popularModels } = appState;
-
-      // Top KPIs
-      document.getElementById("activeModelLabel").textContent = settings.llmModel;
-      document.getElementById("velonaStatusText").textContent = velonaStatus.message;
-      document.getElementById("velonaBadge").textContent = velonaStatus.connected
-        ? `₹${velonaStatus.balanceInr ?? "Live"}`
-        : settings.hasVelonaKey
-        ? "Key Saved"
-        : "Built-in Engine";
-
-      const igUser = profileSnapshot?.instagramAccount?.username || "ai.wealth.builder";
-      const fbName = profileSnapshot?.facebookPage?.name || "Facebook Page";
-      document.getElementById("connectedAccountsLabel").textContent = `${fbName} ➔ @${igUser}`;
-      document.getElementById("metaStatusText").textContent = metaStatus.message;
-
-      const summary = analysisReport?.profileMetricsSummary || {};
-      document.getElementById("kpiViews").textContent = (summary.totalViews || 0).toLocaleString("en-IN");
-      document.getElementById("kpiSaveRate").textContent = `${summary.avgSaveRate || 6.5}% Avg Saves`;
-      document.getElementById("kpiRevenue").textContent = `₹${(summary.totalRevenueInr || 0).toLocaleString("en-IN")}`;
-      document.getElementById("kpiLeads").textContent = `(${summary.totalLeads || 0} DM Leads)`;
-      document.getElementById("triggerKeywordBadge").textContent = `Trigger: "${settings.dmTriggerKeyword}"`;
-      document.getElementById("pendingLeadsHint").textContent =
-        `${summary.pendingKeywordLeadsCount || 0} pending "${settings.dmTriggerKeyword}" leads + ${summary.unansweredQuestionsCount || 0} questions`;
-
-      // Analysis Report
-      document.getElementById("analysisSourceLabel").textContent = analysisReport?.llmSource || "";
-      document.getElementById("diagnosisSummary").textContent = analysisReport?.summaryDiagnosis || "";
-
-      const winUl = document.getElementById("winningPatternsList");
-      winUl.innerHTML = (analysisReport?.winningPatterns || [])
-        .map((w) => `<li>${escapeHtml(w)}</li>`)
-        .join("");
-
-      const dropUl = document.getElementById("dropPatternsList");
-      dropUl.innerHTML = (analysisReport?.dropImmediately || [])
-        .map((d) => `<li>${escapeHtml(d)}</li>`)
-        .join("");
-
-      // Recent Posts Audited
-      const postsContainer = document.getElementById("recentPostsContainer");
-      postsContainer.innerHTML = (profileSnapshot?.recentPosts || [])
-        .map((post) => {
-          const isSlideshow = post.visualStyle === "pollinations_slideshow";
-          const badgeClass = isSlideshow
-            ? "bg-rose-500/20 text-rose-300 border-rose-500/30"
-            : "bg-cyan-500/15 text-cyan-300 border-cyan-500/30";
-          return `
-            <div class="p-3.5 rounded-xl bg-slate-900/75 border border-slate-800/90 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-              <div class="space-y-1">
-                <div class="flex items-center gap-2">
-                  <span class="px-2 py-0.5 rounded text-[10px] font-bold border ${badgeClass}">
-                    ${escapeHtml(post.visualStyle)}
-                  </span>
-                  <span class="text-xs font-bold text-white">${escapeHtml(post.hookText)}</span>
-                </div>
-                <p class="text-xs text-slate-400 line-clamp-1">${escapeHtml(post.caption)}</p>
-              </div>
-              <div class="flex items-center gap-4 text-xs shrink-0">
-                <div>
-                  <div class="text-slate-400 text-[10px]">VIEWS</div>
-                  <div class="font-bold text-white">${(post.metrics?.views || 0).toLocaleString()}</div>
-                </div>
-                <div>
-                  <div class="text-slate-400 text-[10px]">SAVES</div>
-                  <div class="font-bold text-cyan-300">${(post.metrics?.saves || 0).toLocaleString()}</div>
-                </div>
-                <div>
-                  <div class="text-slate-400 text-[10px]">DM LEADS</div>
-                  <div class="font-bold text-emerald-400">${post.metrics?.dmLeadsTriggered || 0}</div>
-                </div>
-              </div>
-            </div>
-          `;
-        })
-        .join("");
-
-      // Autonomous Actions Queue
-      const actionsContainer = document.getElementById("actionsQueueContainer");
-      actionsContainer.innerHTML = (analysisReport?.autonomousActionsQueue || [])
-        .map((act) => {
-          const actionClick =
-            act.type === "AUTO_REPLY_AND_DM"
-              ? "processAllComments()"
-              : act.type === "GENERATE_CODE_TO_VIDEO_REEL" || act.type === "GENERATE_CAROUSEL_POST"
-              ? "generateNewCodeReel()"
-              : "publishActiveReel()";
-          return `
-            <div class="p-3.5 rounded-xl bg-slate-900/90 border border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-              <div class="space-y-1">
-                <div class="flex items-center gap-2">
-                  <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">
-                    ${escapeHtml(act.priority)}
-                  </span>
-                  <span class="text-xs font-bold text-white">${escapeHtml(act.title)}</span>
-                </div>
-                <p class="text-xs text-slate-400">${escapeHtml(act.impact)}</p>
-              </div>
-              <button
-                onclick="${actionClick}"
-                class="px-3 py-1.5 rounded-lg text-xs font-bold bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 hover:bg-cyan-500/30 shrink-0"
-              >
-                ▶ Execute Action
-              </button>
-            </div>
-          `;
-        })
-        .join("");
-
-      // Comments & DM Funnel List
-      const allComments = [];
-      for (const p of profileSnapshot?.recentPosts || []) {
-        for (const c of p.topComments || []) {
-          allComments.push({ postHook: p.hookText, ...c });
-        }
-      }
-      const commentsContainer = document.getElementById("commentsListContainer");
-      commentsContainer.innerHTML = allComments
-        .map((c) => `
-          <div class="p-3 rounded-xl bg-slate-900/75 border border-slate-800 text-xs space-y-1.5">
-            <div class="flex items-center justify-between">
-              <div class="flex items-center gap-2">
-                <span class="font-bold text-white">${escapeHtml(c.user)}</span>
-                <span class="px-1.5 py-0.5 rounded text-[10px] uppercase bg-slate-800 text-slate-300">${escapeHtml(c.platform)}</span>
-                <span class="text-slate-400">commented:</span>
-                <span class="font-bold text-amber-300">"${escapeHtml(c.text)}"</span>
-              </div>
-              <span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                c.replied
-                  ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/30"
-                  : "bg-rose-500/20 text-rose-300 border border-rose-500/30"
-              }">
-                ${c.replied ? "✓ Replied + DM Sent" : "⏳ Pending Action"}
-              </span>
-            </div>
-            ${
-              c.privateDmText
-                ? `<div class="p-2 rounded-lg bg-emerald-950/30 border border-emerald-500/20 text-[11px] text-emerald-200">
-                     <strong>Auto-DM Sent:</strong> ${escapeHtml(c.privateDmText)}
-                   </div>`
-                : ""
-            }
-          </div>
-        `)
-        .join("");
-
-      // Active Reel in Studio
-      if (contentQueue && contentQueue.length > 0) {
-        if (!activeReel || !contentQueue.find((r) => r.id === activeReel.id)) {
-          activeReel = contentQueue[0];
-        } else {
-          activeReel = contentQueue.find((r) => r.id === activeReel.id);
-        }
-        renderActiveReelStudio();
-      }
-
-      // Queue list
-      const queueList = document.getElementById("reelQueueList");
-      queueList.innerHTML = (contentQueue || [])
-        .map((item) => {
-          const selected = activeReel && activeReel.id === item.id;
-          return `
-            <div
-              onclick="selectReelFromQueue('${item.id}')"
-              class="p-2.5 rounded-lg cursor-pointer flex items-center justify-between text-xs border transition ${
-                selected
-                  ? "bg-cyan-950/50 border-cyan-500/50 text-white"
-                  : "bg-slate-900/60 border-slate-800 text-slate-300 hover:bg-slate-800/70"
-              }"
-            >
-              <div class="truncate pr-2">
-                <span class="font-bold">${escapeHtml(item.hookText || item.title)}</span>
-                <span class="text-[10px] text-slate-400 ml-2">(${escapeHtml(item.visualStyle)})</span>
-              </div>
-              <span class="text-[10px] font-bold px-2 py-0.5 rounded ${
-                item.status === "PUBLISHED"
-                  ? "bg-emerald-500/20 text-emerald-300"
-                  : "bg-cyan-500/20 text-cyan-300"
-              }">${escapeHtml(item.status)}</span>
-            </div>
-          `;
-        })
-        .join("");
-
-      // Populate settings modal fields
-      const modelSelect = document.getElementById("cfgLlmModel");
-      modelSelect.innerHTML = (popularModels || [])
-        .map(
-          (m) =>
-            `<option value="${m.id}" ${m.id === settings.llmModel ? "selected" : ""}>${m.name}</option>`
-        )
-        .join("");
-      document.getElementById("cfgVelonaBaseUrl").value = settings.velonaBaseUrl || "https://velona.in/v1";
-      document.getElementById("cfgFbPageId").value = settings.fbPageId || "";
-      document.getElementById("cfgIgId").value = settings.igBusinessAccountId || "";
-      document.getElementById("cfgNiche").value = settings.niche || "";
-      document.getElementById("cfgTriggerKeyword").value = settings.dmTriggerKeyword || "AUTO";
-      document.getElementById("cfgOfferName").value = settings.monetizationOffer || "";
-      document.getElementById("cfgOfferUrl").value = settings.monetizationUrl || "";
-
-      renderMemoryVault(appState.memoryStore);
-    }
-
-    function renderMemoryVault(memoryStore) {
-      if (!memoryStore) return;
-      document.getElementById("memorySessionBadge").textContent =
-        `Session: ${memoryStore.velonaMemorySessionId || "mem_marketing_team_agent"}`;
-
-      const docs = memoryStore.knowledgeDocs || [];
-      const episodes = memoryStore.episodicPostsMemory || [];
-      document.getElementById("kbCountLabel").textContent = docs.length;
-      document.getElementById("episodicCountLabel").textContent = episodes.length;
-
-      const kbContainer = document.getElementById("knowledgeDocsList");
-      kbContainer.innerHTML = docs
-        .map(
-          (doc) => `
-          <div class="p-3 rounded-xl bg-slate-900/80 border border-slate-800 text-xs space-y-1">
-            <div class="flex items-center justify-between gap-2">
-              <div class="flex items-center gap-1.5 truncate">
-                <span class="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
-                  ${escapeHtml(doc.category)}
-                </span>
-                <span class="font-bold text-white truncate">${escapeHtml(doc.title)}</span>
-              </div>
-              <button
-                onclick="deleteKnowledgeDoc('${doc.id}')"
-                class="text-slate-500 hover:text-rose-400 text-xs font-bold px-1"
-                title="Remove from RAG"
-              >
-                &times;
-              </button>
-            </div>
-            <p class="text-[11px] text-slate-300 leading-relaxed line-clamp-3">${escapeHtml(doc.content)}</p>
-          </div>
-        `
-        )
-        .join("");
-
-      const epContainer = document.getElementById("episodicMemoryList");
-      epContainer.innerHTML = episodes
-        .map(
-          (ep) => `
-          <div class="p-3 rounded-xl bg-slate-900/80 border border-slate-800 text-xs space-y-1">
-            <div class="flex items-center justify-between gap-2">
-              <span class="font-bold text-white truncate">${escapeHtml(ep.hookText)}</span>
-              <span class="px-1.5 py-0.5 rounded text-[10px] font-bold ${
-                ep.outcome === "AVOID_FORMAT"
-                  ? "bg-rose-500/20 text-rose-300"
-                  : "bg-emerald-500/20 text-emerald-300"
-              }">
-                ${escapeHtml(ep.outcome)}
-              </span>
-            </div>
-            <div class="text-[11px] text-slate-400 flex items-center justify-between">
-              <span>Style: <code>${escapeHtml(ep.visualStyle)}</code></span>
-              <span>${ep.saveRate ? `${ep.saveRate}% Saves` : "Indexed in Memory"}</span>
-            </div>
-          </div>
-        `
-        )
-        .join("");
-    }
-
-    async function runRagTestQuery() {
-      const query = document.getElementById("ragQueryInput").value.trim();
-      if (!query) return;
-      const res = await fetch("/api/memory/query", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ query })
-      });
-      const data = await res.json();
-      if (!data.ok) return;
-
-      const { ragResult } = data;
-      const box = document.getElementById("ragQueryResultBox");
-      box.classList.remove("hidden");
-
-      const topDocsHtml = (ragResult.matchedKnowledgeDocs || [])
-        .slice(0, 2)
-        .map(
-          (d) =>
-            `<div class="text-slate-300">• <strong>${escapeHtml(d.title)}</strong> <span class="text-indigo-400 mono">(score: ${d.similarityScore})</span> — ${escapeHtml(d.content.slice(0, 120))}...</div>`
-        )
-        .join("");
-
-      const dedup = ragResult.dedupCheck || {};
-      const dedupBadge = dedup.isNearDuplicate
-        ? `<span class="text-rose-400 font-bold">⚠️ Near-Duplicate Detected (overlap ${dedup.maxOverlapScore} with "${escapeHtml(dedup.closestPastHook)}") — Agent will rewrite hook!</span>`
-        : `<span class="text-emerald-400 font-bold">✓ Anti-Duplicate Guard Passed (max overlap ${dedup.maxOverlapScore} vs past Reels)</span>`;
-
-      box.innerHTML = `
-        <div class="font-bold text-indigo-300">Retrieved RAG Context Injected into Prompt:</div>
-        ${topDocsHtml}
-        <div class="pt-1 border-t border-slate-800">${dedupBadge}</div>
-      `;
-    }
-
-    async function addNewKnowledgeDoc() {
-      const title = document.getElementById("kbTitleInput").value.trim() || "Custom Brand / Offer Note";
-      const category = document.getElementById("kbCategoryInput").value;
-      const content = document.getElementById("kbContentInput").value.trim();
-      if (!content) {
-        showToast("⚠️ Please enter knowledge content to add to RAG memory.");
-        return;
-      }
-
-      const res = await fetch("/api/memory/knowledge", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title, category, content })
-      });
-      const data = await res.json();
-      if (data.ok) {
-        document.getElementById("kbTitleInput").value = "";
-        document.getElementById("kbContentInput").value = "";
-        appState.memoryStore = data.memoryStore;
-        renderMemoryVault(data.memoryStore);
-        showToast(`🧠 Added "${title}" to RAG Knowledge Base! The agent will use this in every future Reel.`);
-      }
-    }
-
-    async function deleteKnowledgeDoc(id) {
-      const res = await fetch(`/api/memory/knowledge/${id}`, { method: "DELETE" });
-      const data = await res.json();
-      if (data.ok) {
-        appState.memoryStore = data.memoryStore;
-        renderMemoryVault(data.memoryStore);
-        showToast("🗑️ Removed document from RAG Knowledge Base.");
-      }
-    }
-
-    function renderActiveReelStudio() {
-      if (!activeReel) return;
-      document.getElementById("activeReelTitle").textContent = activeReel.hookText || activeReel.title;
-      document.getElementById("activeReelStatus").textContent = activeReel.status;
-
-      const videoEl = document.getElementById("reelVideoPlayer");
-      if (videoEl.getAttribute("data-src") !== activeReel.videoUrl) {
-        videoEl.src = activeReel.videoUrl;
-        videoEl.setAttribute("data-src", activeReel.videoUrl);
-        videoEl.load();
-        videoEl.play().catch(() => {});
-      }
-
-      const dlLink = document.getElementById("downloadMp4Link");
-      dlLink.href = activeReel.videoUrl;
-      dlLink.setAttribute("download", `${activeReel.id}.mp4`);
-
-      // Carousel slides
-      const carouselGrid = document.getElementById("carouselGrid");
-      carouselGrid.innerHTML = (activeReel.carouselUrls || [])
-        .map(
-          (url, idx) => `
-          <a href="${url}" target="_blank" class="block rounded-xl overflow-hidden border border-slate-700 bg-slate-950 hover:border-cyan-400 transition">
-            <img src="${url}" alt="Slide ${idx + 1}" class="w-full h-auto object-cover" />
-          </a>
-        `
-        )
-        .join("");
-
-      // Remotion .tsx code
-      document.getElementById("remotionCodeBox").textContent = activeReel.remotionCode || "";
-      document.getElementById("voiceoverTextBox").textContent = activeReel.voiceoverFull || "";
-      document.getElementById("captionTextBox").textContent = activeReel.caption || "";
-    }
-
-    function selectReelFromQueue(id) {
-      const found = (appState?.contentQueue || []).find((r) => r.id === id);
-      if (found) {
-        activeReel = found;
-        renderDashboard();
-      }
-    }
-
-    function switchStudioTab(tab) {
-      ["video", "carousel", "code", "caption"].forEach((t) => {
-        document.getElementById(`studioTab_${t}`).classList.toggle("hidden", t !== tab);
-        const btn = document.getElementById(`tabBtn_${t}`);
-        if (t === tab) {
-          btn.className = "px-3 py-2 border-b-2 border-cyan-400 text-cyan-300";
-        } else {
-          btn.className = "px-3 py-2 border-b-2 border-transparent text-slate-400 hover:text-white";
-        }
-      });
-    }
-
-    function speakActiveVoiceover() {
-      if (!activeReel) return;
-      const videoEl = document.getElementById("reelVideoPlayer");
-      videoEl.currentTime = 0;
-      videoEl.muted = false;
-      videoEl.play().catch(() => {});
-
-      if ("speechSynthesis" in window) {
-        window.speechSynthesis.cancel();
-        const utter = new SpeechSynthesisUtterance(activeReel.voiceoverFull);
-        utter.rate = 1.06;
-        utter.pitch = 1.0;
-        window.speechSynthesis.speak(utter);
-      }
-    }
-
-    async function analyzeProfileNow() {
-      const btn = document.getElementById("btnAnalyze");
-      btn.disabled = true;
-      btn.textContent = "⏳ Auditing Profile...";
-      showToast("Analyzing connected Facebook Page & Linked Instagram profile metrics + comments...");
-      try {
-        await fetch("/api/analyze", { method: "POST" });
-        await fetchState();
-        showToast("✅ Profile audit complete! Updated winning patterns & autonomous action queue.");
-      } finally {
-        btn.disabled = false;
-        btn.textContent = "🔍 Re-Analyze Profile Content";
-      }
-    }
-
-    async function loadVoices() {
-      try {
-        const res = await fetch("/api/voices");
-        const data = await res.json();
-        const sel = document.getElementById("ttsVoiceSelect");
-        const badge = document.getElementById("ttsStatusBadge");
-        if (data.ok && data.voices && data.voices.length) {
-          sel.innerHTML = data.voices.map(v =>
-            `<option value="${v.id}" ${v.id === data.currentVoice ? "selected" : ""}>${v.label}</option>`
-          ).join("");
-          badge.textContent = data.ttsAvailable ? "✅ Edge TTS" : "⚠️ TTS offline";
-          badge.className = `ml-auto px-1.5 py-0.5 rounded-full text-[10px] font-bold ${data.ttsAvailable ? "bg-emerald-500/20 text-emerald-300" : "bg-yellow-500/20 text-yellow-300"}`;
-        } else {
-          sel.innerHTML = `<option value="">TTS unavailable</option>`;
-          badge.textContent = "⚠️ offline";
-          badge.className = "ml-auto px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-yellow-500/20 text-yellow-300";
-        }
-      } catch (e) { console.warn("loadVoices failed:", e); }
-    }
-
-    async function generateNewCodeReel() {
-      const btn = document.getElementById("btnGenerateReel");
-      const customTopic = document.getElementById("customTopicInput").value;
-      const preferredStyle = document.getElementById("videoStyleSelect").value;
-      const ttsVoice = document.getElementById("ttsVoiceSelect").value;
-      btn.disabled = true;
-      btn.textContent = "⚙️ Rendering 9:16 MP4 in Code...";
-      showToast("Writing hook, script, Remotion .tsx code & rendering 9:16 MP4 Reel + 4 Carousel slides...");
-      try {
-        const res = await fetch("/api/generate-reel", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ customTopic, preferredStyle, ttsVoice })
-        });
-        const data = await res.json();
-        if (data.ok && data.reelItem) {
-          activeReel = data.reelItem;
-          await fetchState();
-          switchStudioTab("video");
-          showToast(`🎬 Rendered new Code-to-Video Reel: "${data.reelItem.hookText}"!`);
-        }
-      } finally {
-        btn.disabled = false;
-        btn.textContent = "🎬 Write Code & Render 9:16 MP4";
-      }
-    }
-
-    async function runFullAutopilot() {
-      const btn = document.getElementById("btnAutopilot");
-      const customTopic = document.getElementById("customTopicInput").value;
-      const preferredStyle = document.getElementById("videoStyleSelect").value;
-      const ttsVoice = document.getElementById("ttsVoiceSelect").value;
-      btn.disabled = true;
-      btn.textContent = "⏳ Running Full Autopilot...";
-      showToast("Executing Full Autopilot: 1) Profile Audit ➔ 2) Auto-Reply & DM Leads ➔ 3) Render Code-to-Video MP4 ➔ 4) Auto-Publish IG + FB...");
-      try {
-        const res = await fetch("/api/run-autopilot", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ customTopic, preferredStyle, forcePublish: true, ttsVoice })
-        });
-        const data = await res.json();
-        if (data.ok && data.reelItem) {
-          activeReel = data.reelItem;
-          await fetchState();
-          showToast(`🚀 Autopilot cycle complete! Replied/DMed ${data.dmProcessedCount} commenters & published "${data.reelItem.hookText}" to IG + FB!`);
-        }
-      } finally {
-        btn.disabled = false;
-        btn.textContent = "🚀 Run Full Autopilot Loop Now";
-      }
-    }
-
-    async function publishActiveReel() {
-      if (!activeReel) return;
-      const btn = document.getElementById("btnPublishActive");
-      btn.disabled = true;
-      btn.textContent = "⏳ Publishing...";
-      showToast("Publishing 9:16 MP4 Reel & Carousel to Linked Instagram + Facebook Page via Meta Graph API...");
-      try {
-        const res = await fetch(`/api/publish/${activeReel.id}`, { method: "POST" });
-        const data = await res.json();
-        if (data.ok) {
-          await fetchState();
-          showToast(`📲 Published "${activeReel.hookText}" to Instagram Reels & Facebook Page!`);
-        }
-      } finally {
-        btn.disabled = false;
-        btn.textContent = "📲 Publish to IG + FB Now";
-      }
-    }
-
-    async function processAllComments() {
-      showToast("Sending public replies + Private DM monetization links to pending commenters...");
-      const res = await fetch("/api/process-comments", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({})
-      });
-      const data = await res.json();
-      if (data.ok) {
-        await fetchState();
-        showToast(`💸 Replied & sent Private DM offer links to ${data.dmResult.processedCount} leads!`);
-      }
-    }
-
-    async function simulateAndProcessComment() {
-      const user = document.getElementById("simCommentUser").value || "@new_viewer";
-      const text = document.getElementById("simCommentText").value || "AUTO";
-      showToast(`Simulating comment from ${user} ("${text}") & triggering Auto-Reply + Private DM...`);
-      const res = await fetch("/api/process-comments", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          simulateComment: { user, text, platform: "instagram" }
-        })
-      });
-      const data = await res.json();
-      if (data.ok) {
-        await fetchState();
-        showToast(`⚡ Agent replied to ${user} & DMed the monetization link (${appState.settings.monetizationUrl})!`);
-      }
-    }
-
-    function toggleSettingsModal(show) {
-      document.getElementById("settingsModal").classList.toggle("hidden", !show);
-    }
-
-    async function saveSettings() {
-      const velonaKeyInput = document.getElementById("cfgVelonaKey").value.trim();
-      const fbTokenInput = document.getElementById("cfgFbToken").value.trim();
-
-      const payload = {
-        velonaApiKey: velonaKeyInput ? velonaKeyInput : "__KEEP__",
-        velonaBaseUrl: document.getElementById("cfgVelonaBaseUrl").value.trim(),
-        llmModel: document.getElementById("cfgLlmModel").value,
-        fbPageAccessToken: fbTokenInput ? fbTokenInput : "__KEEP__",
-        fbPageId: document.getElementById("cfgFbPageId").value.trim(),
-        igBusinessAccountId: document.getElementById("cfgIgId").value.trim(),
-        niche: document.getElementById("cfgNiche").value.trim(),
-        dmTriggerKeyword: document.getElementById("cfgTriggerKeyword").value.trim(),
-        monetizationOffer: document.getElementById("cfgOfferName").value.trim(),
-        monetizationUrl: document.getElementById("cfgOfferUrl").value.trim()
-      };
-
-      const res = await fetch("/api/settings", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
-      });
-      const data = await res.json();
-      if (data.ok) {
-        toggleSettingsModal(false);
-        await fetchState();
-        showToast("✅ Settings saved & accounts synced!");
-      }
-    }
-
-    function copyRemotionCode() {
-      if (!activeReel?.remotionCode) return;
-      navigator.clipboard.writeText(activeReel.remotionCode);
-      showToast("📋 Copied Remotion .tsx component code to clipboard!");
-    }
-
-    function escapeHtml(str) {
-      return String(str || "")
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;");
-    }
-
-    fetchState();
-    loadVoices();
-  </script>
+  <script src="/app.js"></script>
 </body>
 </html>

@@ -120,7 +120,8 @@ async function generateCodeToVideoReel({ settings, analysisReport, customTopic =
     targetQuestion,
     triggerKeyword,
     styleKey,
-    settings
+    settings,
+    ragContext
   });
 
   const reelId = `reel_${Date.now()}`;
@@ -180,49 +181,52 @@ async function generateCodeToVideoReel({ settings, analysisReport, customTopic =
   return reelResult;
 }
 
-function buildSceneSpec(parsed, { targetTopic, targetQuestion, triggerKeyword, styleKey, settings }) {
+function buildSceneSpec(parsed, { targetTopic, targetQuestion, triggerKeyword, styleKey, settings, ragContext }) {
   const envCfg = resolveEnvConfig(settings);
   const activeBaseUrl = envCfg.baseUrl || "$VELONA_BASE_URL";
   const activeModel = envCfg.model || "$LLM_MODEL";
+  const cleanTopic = (targetTopic || "Autonomous AI Code-to-Video Reels").trim();
+  const shortHeadline1 = cleanTopic.length <= 42 ? cleanTopic : `${cleanTopic.slice(0, 40).trim()}...`;
+  const ragFactTitle = ragContext?.matchedKnowledgeDocs?.[0]?.title || "RAG Knowledge Vault";
 
-  const defaultScenes = [
+  const dynamicScenes = [
     {
       badge: "01 // SCROLL-STOP HOOK",
-      headline: "Stop Using Static AI Slideshows",
-      voiceover: "Stop using cheap AI image slideshows for Reels. Our agent writes real 60fps video in code using environment variables from your terminal.",
+      headline: shortHeadline1,
+      voiceover: `${cleanTopic}. Instead of slow manual editing or static slideshows, our agent renders real sixty frames per second video directly from code.`,
       codeLines: [
-        "// 1. Read Env Config (Zero Hardcoding)",
+        `// Topic: ${cleanTopic.slice(0, 34)}`,
         "const { VELONA_BASE_URL, LLM_MODEL } = process.env;",
-        "// 2. Audit IG + FB Profile via Graph API",
-        "const audit = await agent.analyzeProfile(fbToken);"
+        "const rag = await memory.retrieveContext(topic);",
+        "const reel = await agent.compileCodeReel(rag);"
       ],
       metricLabel: "3-SEC HOOK RETENTION",
       metricValue: "84.6%",
-      highlightWord: "60fps"
+      highlightWord: cleanTopic.split(/\s+/)[0] || "AI"
     },
     {
-      badge: "02 // PROFILE ANALYSIS",
-      headline: "Agent Audits Your IG & FB First",
-      voiceover: "First, the agent connects to your Facebook Page, discovers your linked Instagram, and finds which hooks got the most saves.",
+      badge: "02 // PROFILE & RAG MEMORY",
+      headline: "Audits Profile & RAG Brain First",
+      voiceover: `First, it audits your Facebook and linked Instagram metrics and pulls context from ${ragFactTitle} so it never repeats a hook.`,
       codeLines: [
         "GET /me/accounts?fields=instagram_business_account",
-        "savesWeight = 3.0; sharesWeight = 3.0;",
-        `winningFormat = '${styleKey}' // +14.2x views`,
-        "nextTopic = comments.mineTopQuestion();"
+        `ragMatch = '${ragFactTitle.slice(0, 28)}'`,
+        `winningStyle = '${styleKey}' // +14.2x saves`,
+        "dedupGuard.verifyUniqueHook(scenes[0]);"
       ],
       metricLabel: "SAVE RATE BOOST",
       metricValue: "+14.2x",
-      highlightWord: "saves"
+      highlightWord: "never"
     },
     {
       badge: "03 // CODE-TO-VIDEO ENGINE",
       headline: `Powered by ${activeModel}`,
-      voiceover: `Then it calls ${activeModel} via your configured base URL to render kinetic typography, charts, and voiceover for pennies.`,
+      voiceover: `Then it calls ${activeModel} to write kinetic typography, animated charts, and neural voiceover for just eight paise per video.`,
       codeLines: [
         `POST ${activeBaseUrl}/chat/completions`,
         `model: '${activeModel}'`,
-        "renderFrames({ fps: 24, size: '540x960' });",
-        "costInr: '~₹0.08 per Reel (UPI Top-Up)'"
+        `voice: '${process.env.TTS_VOICE || settings.ttsVoice || "en-US-ChristopherNeural"}'`,
+        "renderMp4({ fps: 24, size: '540x960' });"
       ],
       metricLabel: "COST PER REEL",
       metricValue: "₹0.08",
@@ -230,8 +234,8 @@ function buildSceneSpec(parsed, { targetTopic, targetQuestion, triggerKeyword, s
     },
     {
       badge: "04 // AUTO-POST & EARN",
-      headline: `Comment '${triggerKeyword}' For The Repo`,
-      voiceover: `It auto-posts to Instagram and Facebook and DMs your payment link to every comment. Comment ${triggerKeyword} and I'll send you the full code.`,
+      headline: `Comment '${triggerKeyword}' For The Stack`,
+      voiceover: `It auto-posts to Instagram and Facebook and DMs your offer link to every comment. Comment ${triggerKeyword} and I will send you the full setup.`,
       codeLines: [
         "await meta.publishReel({ igId, fbPageId, mp4 });",
         `if (comment.includes('${triggerKeyword}')) {`,
@@ -244,25 +248,37 @@ function buildSceneSpec(parsed, { targetTopic, targetQuestion, triggerKeyword, s
     }
   ];
 
+  const rawSceneList =
+    parsed?.scenes || parsed?.slides || parsed?.scene_list || [];
+
   const scenes =
-    Array.isArray(parsed?.scenes) && parsed.scenes.length >= 3
-      ? parsed.scenes.slice(0, 4).map((s, i) => ({
-          badge: s.badge || defaultScenes[i].badge,
-          headline: s.headline || defaultScenes[i].headline,
-          voiceover: s.voiceover || defaultScenes[i].voiceover,
-          codeLines:
-            Array.isArray(s.codeLines) && s.codeLines.length > 0
-              ? s.codeLines.slice(0, 4)
-              : defaultScenes[i].codeLines,
-          metricLabel: s.metricLabel || defaultScenes[i].metricLabel,
-          metricValue: s.metricValue || defaultScenes[i].metricValue,
-          highlightWord: s.highlightWord || defaultScenes[i].highlightWord
-        }))
-      : defaultScenes;
+    Array.isArray(rawSceneList) && rawSceneList.length >= 3
+      ? rawSceneList.slice(0, 4).map((s, i) => {
+          const fallback = dynamicScenes[i] || dynamicScenes[0];
+          const rawCode = s.codeLines || s.code_lines || s.lines || s.code;
+          const normalizedCode = Array.isArray(rawCode)
+            ? rawCode.map(String).slice(0, 4)
+            : typeof rawCode === "string"
+            ? rawCode.split(/\r?\n/).filter(Boolean).slice(0, 4)
+            : fallback.codeLines;
+
+          return {
+            badge: s.badge || fallback.badge,
+            headline: s.headline || s.title || s.hook || fallback.headline,
+            voiceover: s.voiceover || s.narration || s.script || s.text || fallback.voiceover,
+            codeLines: normalizedCode.length > 0 ? normalizedCode : fallback.codeLines,
+            metricLabel: s.metricLabel || s.metric_label || fallback.metricLabel,
+            metricValue: String(s.metricValue || s.metric_value || fallback.metricValue),
+            highlightWord: s.highlightWord || s.highlight_word || fallback.highlightWord
+          };
+        })
+      : dynamicScenes;
 
   const hookText =
     parsed?.hookText ||
-    (targetTopic.length <= 58 ? targetTopic : "My AI Agent Audits My Profile & Writes Video in Code ⚡");
+    parsed?.hook_text ||
+    parsed?.hook ||
+    (cleanTopic.length <= 58 ? cleanTopic : `${cleanTopic.slice(0, 55)}...`);
 
   const voiceoverFull =
     parsed?.voiceoverFull || scenes.map((s) => s.voiceover).join(" ");

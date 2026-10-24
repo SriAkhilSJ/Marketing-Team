@@ -180,51 +180,55 @@ async function callVelonaChat({
     };
   }
 
-  // 1. Try OpenAI-compatible /chat/completions
+  // 1. Try OpenAI-compatible /chat/completions (with automatic retry without response_format if rejected)
   if (baseUrl) {
-    try {
-      const chatUrl = baseUrl.endsWith("/chat/completions")
-        ? baseUrl
-        : `${baseUrl}/chat/completions`;
-      const body = {
-        model,
-        messages: [
-          ...(systemPrompt ? [{ role: "system", content: systemPrompt }] : []),
-          { role: "user", content: userPrompt }
-        ],
-        temperature,
-        max_tokens: maxTokens
-      };
-      if (jsonMode) {
-        body.response_format = { type: "json_object" };
-      }
+    const chatUrl = baseUrl.endsWith("/chat/completions")
+      ? baseUrl
+      : `${baseUrl}/chat/completions`;
 
-      const res = await fetch(chatUrl, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${apiKey}`,
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify(body),
-        signal: AbortSignal.timeout(30000)
-      });
-
-      if (res.ok) {
-        const data = await res.json();
-        const content =
-          data?.choices?.[0]?.message?.content || data?.data?.output || "";
-        if (content) {
-          return {
-            ok: true,
-            source: chatUrl,
-            model,
-            content,
-            usage: data.usage || data?.data?.usage || null
-          };
+    const attempts = jsonMode ? [true, false] : [false];
+    for (const useResponseFormat of attempts) {
+      try {
+        const body = {
+          model,
+          messages: [
+            ...(systemPrompt ? [{ role: "system", content: systemPrompt }] : []),
+            { role: "user", content: userPrompt }
+          ],
+          temperature,
+          max_tokens: maxTokens
+        };
+        if (useResponseFormat) {
+          body.response_format = { type: "json_object" };
         }
+
+        const res = await fetch(chatUrl, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${apiKey}`,
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify(body),
+          signal: AbortSignal.timeout(35000)
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          const content =
+            data?.choices?.[0]?.message?.content || data?.data?.output || "";
+          if (content) {
+            return {
+              ok: true,
+              source: chatUrl,
+              model,
+              content,
+              usage: data.usage || data?.data?.usage || null
+            };
+          }
+        }
+      } catch (_) {
+        // Try next attempt or proceed to gatewayUrl
       }
-    } catch (_) {
-      // Proceed to gatewayUrl if configured
     }
   }
 
@@ -291,10 +295,17 @@ async function callVelonaChat({
 
 function parseJsonSafely(text) {
   if (!text) return null;
+  // Strip markdown code fences (```json ... ```) and <think>...</think> blocks
+  const cleaned = String(text)
+    .replace(/<think>[\s\S]*?<\/think>/gi, "")
+    .replace(/```(?:json)?\s*/gi, "")
+    .replace(/```/g, "")
+    .trim();
+
   try {
-    return JSON.parse(text);
+    return JSON.parse(cleaned);
   } catch (_) {
-    const match = text.match(/\{[\s\S]*\}/);
+    const match = cleaned.match(/\{[\s\S]*\}/);
     if (match) {
       try {
         return JSON.parse(match[0]);

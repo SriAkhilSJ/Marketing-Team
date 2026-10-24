@@ -7,6 +7,7 @@ const { discoverFacebookAndLinkedInstagram, publishReelCrossPlatform } = require
 const { analyzeProfileAndPlanActions } = require("./src/profileAnalyzer");
 const { VIDEO_STYLES, generateCodeToVideoReel } = require("./src/codeVideoEngine");
 const { EDGE_TTS_VOICES, isEdgeTtsAvailable } = require("./src/ttsEngine");
+const { buildUiConfigSchema } = require("./src/uiSchema");
 const { runFullAutopilotCycle, processPendingCommentActions } = require("./src/autopilotDaemon");
 const {
   loadMemoryStore,
@@ -51,6 +52,7 @@ app.get("/api/state", async (req, res) => {
 
     res.json({
       ok: true,
+      uiConfig: buildUiConfigSchema(state.settings),
       settings: safeSettings,
       velonaStatus,
       metaStatus,
@@ -67,15 +69,27 @@ app.get("/api/state", async (req, res) => {
   }
 });
 
-// POST update settings (Velona key, Facebook token, niche, monetization offer, autopilot mode)
+// GET dynamic UI configuration & schema (eliminates static HTML hardcoding)
+app.get("/api/config", (req, res) => {
+  try {
+    const state = loadState();
+    res.json({
+      ok: true,
+      ...buildUiConfigSchema(state.settings)
+    });
+  } catch (err) {
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
 
 // GET available TTS voices
 app.get("/api/voices", (req, res) => {
+  const state = loadState();
   res.json({
     ok: true,
     ttsAvailable: isEdgeTtsAvailable(),
     voices: EDGE_TTS_VOICES,
-    currentVoice: process.env.TTS_VOICE || "en-US-ChristopherNeural"
+    currentVoice: process.env.TTS_VOICE || state.settings.ttsVoice || "en-US-ChristopherNeural"
   });
 });
 
@@ -107,7 +121,8 @@ app.post("/api/settings", async (req, res) => {
       "autoPublishToFacebook",
       "autoReplyComments",
       "autoDmLeads",
-      "preferredVideoStyle"
+      "preferredVideoStyle",
+      "ttsVoice"
     ];
 
     for (const key of allowedFields) {
@@ -118,6 +133,10 @@ app.post("/api/settings", async (req, res) => {
         }
         updated[key] = incoming[key];
       }
+    }
+
+    if (updated.ttsVoice) {
+      process.env.TTS_VOICE = updated.ttsVoice;
     }
 
     // If FB Page token was updated, auto-discover FB Page ID & Linked Instagram Business Account ID
