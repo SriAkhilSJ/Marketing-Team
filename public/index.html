@@ -359,7 +359,7 @@
               />
             </div>
 
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
               <div>
                 <label class="block text-xs font-semibold text-slate-300 mb-1">Code-to-Video Style</label>
                 <select
@@ -371,6 +371,18 @@
                   <option value="chat_story">Animated iMessage / DM Story</option>
                   <option value="minimal_wealth">Dan Koe / Minimalist Motion</option>
                   <option value="quiz_challenge">Interactive Timer Hook</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-slate-300 mb-1 flex items-center gap-1">
+                  🎙️ Voiceover Voice
+                  <span id="ttsStatusBadge" class="ml-auto px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-slate-700 text-slate-300">loading…</span>
+                </label>
+                <select
+                  id="ttsVoiceSelect"
+                  class="w-full px-2.5 py-2 rounded-lg bg-slate-950 border border-slate-800 text-xs text-white"
+                >
+                  <option value="">Loading voices…</option>
                 </select>
               </div>
               <div class="flex items-end">
@@ -1013,10 +1025,31 @@
       }
     }
 
+    async function loadVoices() {
+      try {
+        const res = await fetch("/api/voices");
+        const data = await res.json();
+        const sel = document.getElementById("ttsVoiceSelect");
+        const badge = document.getElementById("ttsStatusBadge");
+        if (data.ok && data.voices && data.voices.length) {
+          sel.innerHTML = data.voices.map(v =>
+            `<option value="${v.id}" ${v.id === data.currentVoice ? "selected" : ""}>${v.label}</option>`
+          ).join("");
+          badge.textContent = data.ttsAvailable ? "✅ Edge TTS" : "⚠️ TTS offline";
+          badge.className = `ml-auto px-1.5 py-0.5 rounded-full text-[10px] font-bold ${data.ttsAvailable ? "bg-emerald-500/20 text-emerald-300" : "bg-yellow-500/20 text-yellow-300"}`;
+        } else {
+          sel.innerHTML = `<option value="">TTS unavailable</option>`;
+          badge.textContent = "⚠️ offline";
+          badge.className = "ml-auto px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-yellow-500/20 text-yellow-300";
+        }
+      } catch (e) { console.warn("loadVoices failed:", e); }
+    }
+
     async function generateNewCodeReel() {
       const btn = document.getElementById("btnGenerateReel");
       const customTopic = document.getElementById("customTopicInput").value;
       const preferredStyle = document.getElementById("videoStyleSelect").value;
+      const ttsVoice = document.getElementById("ttsVoiceSelect").value;
       btn.disabled = true;
       btn.textContent = "⚙️ Rendering 9:16 MP4 in Code...";
       showToast("Writing hook, script, Remotion .tsx code & rendering 9:16 MP4 Reel + 4 Carousel slides...");
@@ -1024,7 +1057,7 @@
         const res = await fetch("/api/generate-reel", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ customTopic, preferredStyle })
+          body: JSON.stringify({ customTopic, preferredStyle, ttsVoice })
         });
         const data = await res.json();
         if (data.ok && data.reelItem) {
@@ -1043,6 +1076,7 @@
       const btn = document.getElementById("btnAutopilot");
       const customTopic = document.getElementById("customTopicInput").value;
       const preferredStyle = document.getElementById("videoStyleSelect").value;
+      const ttsVoice = document.getElementById("ttsVoiceSelect").value;
       btn.disabled = true;
       btn.textContent = "⏳ Running Full Autopilot...";
       showToast("Executing Full Autopilot: 1) Profile Audit ➔ 2) Auto-Reply & DM Leads ➔ 3) Render Code-to-Video MP4 ➔ 4) Auto-Publish IG + FB...");
@@ -1050,7 +1084,7 @@
         const res = await fetch("/api/run-autopilot", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ customTopic, preferredStyle, forcePublish: true })
+          body: JSON.stringify({ customTopic, preferredStyle, forcePublish: true, ttsVoice })
         });
         const data = await res.json();
         if (data.ok && data.reelItem) {
@@ -1164,6 +1198,7 @@
     }
 
     fetchState();
+    loadVoices();
   </script>
 </body>
 </html>

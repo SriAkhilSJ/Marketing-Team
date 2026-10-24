@@ -6,6 +6,7 @@ const { POPULAR_VELONA_MODELS, checkVelonaCredits } = require("./src/velonaClien
 const { discoverFacebookAndLinkedInstagram, publishReelCrossPlatform } = require("./src/metaGraphClient");
 const { analyzeProfileAndPlanActions } = require("./src/profileAnalyzer");
 const { VIDEO_STYLES, generateCodeToVideoReel } = require("./src/codeVideoEngine");
+const { EDGE_TTS_VOICES, isEdgeTtsAvailable } = require("./src/ttsEngine");
 const { runFullAutopilotCycle, processPendingCommentActions } = require("./src/autopilotDaemon");
 const {
   loadMemoryStore,
@@ -67,7 +68,19 @@ app.get("/api/state", async (req, res) => {
 });
 
 // POST update settings (Velona key, Facebook token, niche, monetization offer, autopilot mode)
+
+// GET available TTS voices
+app.get("/api/voices", (req, res) => {
+  res.json({
+    ok: true,
+    ttsAvailable: isEdgeTtsAvailable(),
+    voices: EDGE_TTS_VOICES,
+    currentVoice: process.env.TTS_VOICE || "en-US-ChristopherNeural"
+  });
+});
+
 app.post("/api/settings", async (req, res) => {
+
   try {
     const incoming = req.body || {};
     const state = loadState();
@@ -148,11 +161,13 @@ app.post("/api/analyze", async (req, res) => {
 // POST generate a Code-to-Video Reel + Carousel
 app.post("/api/generate-reel", async (req, res) => {
   try {
-    const { customTopic = "", preferredStyle = "" } = req.body || {};
+    const { customTopic = "", preferredStyle = "", ttsVoice = "" } = req.body || {};
     const state = loadState();
     if (!state.analysisReport) {
       await analyzeProfileAndPlanActions(state);
     }
+    // Override TTS_VOICE for this request if the caller sent one
+    if (ttsVoice) process.env.TTS_VOICE = ttsVoice;
 
     const reelItem = await generateCodeToVideoReel({
       settings: state.settings,
@@ -194,7 +209,8 @@ app.post("/api/generate-reel", async (req, res) => {
 // POST run full autonomous cycle (Analyze -> Reply/DM -> Render Code Reel -> Auto-Publish)
 app.post("/api/run-autopilot", async (req, res) => {
   try {
-    const { customTopic = "", preferredStyle = "", forcePublish = true } = req.body || {};
+    const { customTopic = "", preferredStyle = "", forcePublish = true, ttsVoice = "" } = req.body || {};
+    if (ttsVoice) process.env.TTS_VOICE = ttsVoice;
     const result = await runFullAutopilotCycle({
       customTopic,
       preferredStyle,
