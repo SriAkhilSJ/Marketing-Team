@@ -1,3 +1,4 @@
+const fs = require("fs");
 const express = require("express");
 const cors = require("cors");
 const path = require("path");
@@ -386,10 +387,32 @@ async function bootstrapInitialContent() {
     await analyzeProfileAndPlanActions(state);
     saveState(state);
   }
-  if (!state.contentQueue || state.contentQueue.length === 0) {
-    console.log("Bootstrapping initial Code-to-Video Reel (.mp4) + 4 Carousel Slides...");
-    await runFullAutopilotCycle({ forcePublish: false });
-    console.log("Initial Code-to-Video Reel ready!");
+
+  // Purge any legacy cached reels from earlier versions in local data/state.json
+  state.contentQueue = (state.contentQueue || []).filter((r) => {
+    const hasLegacy = (r.scenes || []).some(
+      (s) =>
+        String(s.headline || "").includes("Powered by deepseek") ||
+        String(s.headline || "").includes("Stop Using Static") ||
+        String(s.metricValue || "").includes("0.08")
+    );
+    const existsOnDisk = r.localMp4Path && fs.existsSync(r.localMp4Path);
+    return !hasLegacy && existsOnDisk;
+  });
+
+  if (state.contentQueue.length === 0) {
+    console.log("Bootstrapping fresh 30fps Monochrome Code-to-Video Reel (.mp4) + 4 Carousel Slides...");
+    const reelItem = await generateCodeToVideoReel({
+      settings: state.settings,
+      analysisReport: state.analysisReport,
+      customTopic: "How AI Generates Instagram Reels Automatically From Code",
+      preferredStyle: state.settings.preferredVideoStyle || "fireship_code"
+    });
+    state.contentQueue = [reelItem];
+    saveState(state);
+    console.log("Initial 30fps Monochrome Code-to-Video Reel ready!");
+  } else {
+    saveState(state);
   }
 }
 

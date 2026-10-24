@@ -18,6 +18,7 @@ const { resolveEnvConfig } = require("./src/velonaClient");
 const {
   loadMemoryStore,
   addKnowledgeDocument,
+  deleteKnowledgeDocument,
   retrieveContextFromRag
 } = require("./src/memoryRagEngine");
 const { analyzeProfileAndPlanActions } = require("./src/profileAnalyzer");
@@ -64,6 +65,7 @@ async function runAllTests() {
   const ragRes = retrieveContextFromRag("AUTO comment Instagram Facebook Reels ₹499 Blueprint", 3);
   assert.ok(ragRes.matchedKnowledgeDocs.length > 0, "RAG returned no matched documents");
   assert.ok(ragRes.matchedKnowledgeDocs[0].similarityScore > 0, "RAG similarity score should be > 0");
+  deleteKnowledgeDocument(addedDoc.id);
   console.log(
     `  ✅ PASS: RAG Top Match="${ragRes.matchedKnowledgeDocs[0].title}" (Score: ${ragRes.matchedKnowledgeDocs[0].similarityScore}) | Dedup Guard Passed=${!ragRes.dedupCheck.isNearDuplicate}\n`
   );
@@ -105,8 +107,9 @@ async function runAllTests() {
   assert.strictEqual(reel.carouselUrls.length, 4, "Should render 4 Carousel PNG slides");
   assert.ok(reel.remotionCode.includes("export const AutonomousCodeReel"), "Remotion .tsx code invalid");
   assert.ok(
-    !reel.scenes[0].headline.includes("Stop Using Static AI Slideshows"),
-    "Scene 1 headline should dynamically reflect customTopic, not a hardcoded static fallback"
+    !reel.scenes[0].headline.includes("Stop Using Static AI Slideshows") &&
+      !reel.scenes[2].headline.includes("Powered by deepseek"),
+    "Scenes should dynamically reflect customTopic, not hardcoded model/slideshow filler"
   );
 
   const memAfterReel = loadMemoryStore();

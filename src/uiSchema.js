@@ -2,254 +2,283 @@ const { VIDEO_STYLES } = require("./codeVideoEngine");
 const { POPULAR_VELONA_MODELS } = require("./velonaClient");
 const { EDGE_TTS_VOICES, isEdgeTtsAvailable } = require("./ttsEngine");
 
-/**
- * Dynamic UI & Configuration Schema served via GET /api/config
- * Eliminates all hardcoded options, settings fields, KPI labels, and toggles from public/index.html.
- */
+const KB_CATEGORIES = [
+  { id: "monetization", label: "MONETIZATION & OFFER" },
+  { id: "product", label: "PRODUCT / TECH STACK" },
+  { id: "hooks", label: "VIRAL HOOKS & RULES" },
+  { id: "audience", label: "AUDIENCE FAQ" },
+  { id: "brand", label: "BRAND VOICE & PROOF" }
+];
+
+const AUTOMATION_MODES = [
+  {
+    id: "hybrid_dashboard",
+    label: "HYBRID STUDIO + ONE-CLICK AUTOPILOT",
+    description: "Inspect analytics, preview 30fps monochrome Reels, and trigger full autopilot anytime."
+  },
+  {
+    id: "full_autopilot",
+    label: "FULL AUTOPILOT (ZERO-TOUCH)",
+    description: "Automatically audits profile, renders 9:16 MP4 + Carousel, publishes to IG & FB, and DMs commenters."
+  },
+  {
+    id: "review_first",
+    label: "REVIEW BEFORE PUBLISH",
+    description: "Generates MP4 + Carousel into PENDING_REVIEW queue for manual sign-off."
+  }
+];
+
+const STUDIO_TABS = [
+  { id: "video", label: "01 // 9:16 MP4" },
+  { id: "carousel", label: "02 // CAROUSEL (4)" },
+  { id: "code", label: "03 // REMOTION .TSX" },
+  { id: "caption", label: "04 // SCRIPT & CTA" }
+];
+
+const KPI_SCHEMA = [
+  {
+    id: "llm_engine",
+    label: "01 // TEXT-TO-TEXT ENGINE",
+    valueKey: "llmEngineTitle",
+    subKey: "llmEngineSubtitle",
+    badgeKey: "llmEngineBadge"
+  },
+  {
+    id: "meta_graph",
+    label: "02 // FB -> IG LINKED AUTH",
+    valueKey: "metaStatusTitle",
+    subKey: "metaStatusSubtitle",
+    badgeKey: "metaStatusBadge"
+  },
+  {
+    id: "profile_saves",
+    label: "03 // CODE REEL SAVE RATE",
+    valueKey: "saveRateTitle",
+    subKey: "saveRateSubtitle",
+    badgeKey: "saveRateBadge"
+  },
+  {
+    id: "rag_memory",
+    label: "04 // PERSISTENT RAG VAULT",
+    valueKey: "ragMemoryTitle",
+    subKey: "ragMemorySubtitle",
+    badgeKey: "ragMemoryBadge"
+  }
+];
+
 function buildUiConfigSchema(settings = {}) {
-  const ttsAvailable = isEdgeTtsAvailable();
-  const currentVoice = process.env.TTS_VOICE || settings.ttsVoice || "en-US-ChristopherNeural";
+  const videoStyles = Object.values(VIDEO_STYLES).map((s) => ({
+    id: s.id,
+    name: s.name,
+    accent: s.accent,
+    secondary: s.secondary
+  }));
+
+  const currentVoice =
+    process.env.TTS_VOICE || settings.ttsVoice || "en-US-ChristopherNeural";
+
+  const settingsSchema = [
+    {
+      sectionId: "velona_env",
+      title: "01 // OpenAI-Compatible & Gateway Environment (.env)",
+      subtitle: "Reads and persists directly to process.env and .env with zero hardcoding.",
+      fields: [
+        {
+          key: "velonaApiKey",
+          envVar: "VELONA_API_KEY",
+          label: "API Key (VELONA_API_KEY)",
+          type: "password",
+          placeholder: "sk-...",
+          value: settings.velonaApiKey || ""
+        },
+        {
+          key: "velonaBaseUrl",
+          envVar: "VELONA_BASE_URL",
+          label: "OpenAI-Compatible Base URL (VELONA_BASE_URL)",
+          type: "text",
+          placeholder: "https://velona.in/v1",
+          value: process.env.VELONA_BASE_URL || settings.velonaBaseUrl || ""
+        },
+        {
+          key: "velonaGatewayUrl",
+          envVar: "VELONA_GATEWAY_URL",
+          label: "Gateway Base URL (VELONA_GATEWAY_URL)",
+          type: "text",
+          placeholder: "https://velona.in/gateway/v1",
+          value: process.env.VELONA_GATEWAY_URL || settings.velonaGatewayUrl || ""
+        },
+        {
+          key: "llmModel",
+          envVar: "LLM_MODEL",
+          label: "Model ID (LLM_MODEL)",
+          type: "model_select_or_custom",
+          placeholder: "deepseek/deepseek-v4-flash",
+          value: process.env.LLM_MODEL || settings.llmModel || "",
+          options: POPULAR_VELONA_MODELS.map((m) => ({
+            id: m.id,
+            label: `${m.name} [${m.id}]`,
+            badge: m.badge
+          }))
+        }
+      ]
+    },
+    {
+      sectionId: "meta_auth",
+      title: "02 // Single Facebook Page Connection -> Linked Instagram Discovery",
+      subtitle: "One Facebook Page Access Token controls both Facebook Page and linked Instagram Business.",
+      fields: [
+        {
+          key: "fbPageAccessToken",
+          envVar: "FB_PAGE_ACCESS_TOKEN",
+          label: "Facebook Page Access Token (FB_PAGE_ACCESS_TOKEN)",
+          type: "password",
+          placeholder: "EAABsbCS1iHgBO...",
+          value: settings.fbPageAccessToken || ""
+        },
+        {
+          key: "fbPageId",
+          envVar: "FB_PAGE_ID",
+          label: "Facebook Page ID (Optional — Auto-Discovered)",
+          type: "text",
+          placeholder: "Auto-discovered from /me/accounts",
+          value: settings.fbPageId || ""
+        },
+        {
+          key: "igBusinessAccountId",
+          envVar: "IG_BUSINESS_ACCOUNT_ID",
+          label: "Linked Instagram Business ID (Auto-Discovered)",
+          type: "text",
+          placeholder: "Auto-discovered from Facebook Page",
+          value: settings.igBusinessAccountId || ""
+        },
+        {
+          key: "publicVideoBaseUrl",
+          envVar: "PUBLIC_VIDEO_BASE_URL",
+          label: "Public Video Base URL (For Meta Graph Reel Container Fetch)",
+          type: "text",
+          placeholder: "https://your-domain-or-tunnel.app",
+          value: settings.publicVideoBaseUrl || ""
+        }
+      ]
+    },
+    {
+      sectionId: "monetization_funnel",
+      title: "03 // Niche, Brand Voice & Comment-to-DM Monetization Funnel",
+      subtitle: "Used by the RAG Engine, Code-to-Video Generator, and Private Reply DM Responder.",
+      fields: [
+        {
+          key: "profileHandle",
+          envVar: "PROFILE_HANDLE",
+          label: "Profile Handle",
+          type: "text",
+          placeholder: "@ai.wealth.builder",
+          value: settings.profileHandle || ""
+        },
+        {
+          key: "niche",
+          envVar: "NICHE",
+          label: "Account Niche & Positioning",
+          type: "text",
+          placeholder: "AI Agents, Tech Automation & Side Hustle Monetization",
+          value: settings.niche || ""
+        },
+        {
+          key: "brandVoice",
+          envVar: "BRAND_VOICE",
+          label: "Brand Voice",
+          type: "text",
+          placeholder: "Direct, high-clarity, proof-driven, zero fluff",
+          value: settings.brandVoice || ""
+        },
+        {
+          key: "dmTriggerKeyword",
+          envVar: "DM_TRIGGER_KEYWORD",
+          label: "Comment Trigger Keyword (DM_TRIGGER_KEYWORD)",
+          type: "text",
+          placeholder: "AUTO",
+          value: settings.dmTriggerKeyword || "AUTO"
+        },
+        {
+          key: "monetizationOffer",
+          envVar: "MONETIZATION_OFFER",
+          label: "Monetization Offer Name & Price",
+          type: "text",
+          placeholder: "AI Automation Blueprint + Ready-to-Use Templates (Rs.499)",
+          value: settings.monetizationOffer || ""
+        },
+        {
+          key: "monetizationUrl",
+          envVar: "MONETIZATION_URL",
+          label: "Monetization Checkout / Funnel URL",
+          type: "text",
+          placeholder: "https://your-offer-link.com",
+          value: settings.monetizationUrl || ""
+        }
+      ]
+    },
+    {
+      sectionId: "studio_defaults",
+      title: "04 // Autopilot Mode, Default Video Style & Neural Voice",
+      subtitle: "Controls autonomous execution behavior and default rendering parameters.",
+      fields: [
+        {
+          key: "automationMode",
+          envVar: "AUTOMATION_MODE",
+          label: "Execution Mode (AUTOMATION_MODE)",
+          type: "select",
+          value: settings.automationMode || "hybrid_dashboard",
+          options: AUTOMATION_MODES.map((m) => ({ id: m.id, label: m.label }))
+        },
+        {
+          key: "preferredVideoStyle",
+          envVar: "PREFERRED_VIDEO_STYLE",
+          label: "Default Code-to-Video Style (PREFERRED_VIDEO_STYLE)",
+          type: "select",
+          value: settings.preferredVideoStyle || "fireship_code",
+          options: videoStyles.map((s) => ({ id: s.id, label: s.name }))
+        },
+        {
+          key: "ttsVoice",
+          envVar: "TTS_VOICE",
+          label: "Default Neural Voiceover (TTS_VOICE)",
+          type: "select",
+          value: currentVoice,
+          options: EDGE_TTS_VOICES
+        },
+        {
+          key: "autoReplyComments",
+          envVar: "AUTO_REPLY_COMMENTS",
+          label: "Auto-Reply to Post Comments",
+          type: "checkbox",
+          value: settings.autoReplyComments !== false
+        },
+        {
+          key: "autoSendDm",
+          envVar: "AUTO_SEND_DM",
+          label: "Auto-Send Private Reply DMs on Keyword Match",
+          type: "checkbox",
+          value: settings.autoSendDm !== false
+        }
+      ]
+    }
+  ];
 
   return {
     appMeta: {
-      title: "Marketing-Team // Autonomous Reels & Posts Agent",
-      badge: "Code-to-Video + RAG Engine",
-      subtitle: "1 Text Key (velona.in) • 1 Facebook Token (Auto-Links Instagram) • Profile Audit ➔ Code Reel ➔ Auto-Post & DM"
+      title: "AUTONOMOUS REELS // MONOCHROME STUDIO",
+      subtitle: "Procedural 30fps Code-to-Video Engine • FB->IG Single Auth • Persistent RAG Memory",
+      badge: "MONOCHROME v2.0"
     },
-    videoStyles: Object.values(VIDEO_STYLES).map((s) => ({
-      id: s.id,
-      label: s.name,
-      accent: s.accent
-    })),
+    videoStyles,
     voices: EDGE_TTS_VOICES,
-    ttsAvailable,
+    ttsAvailable: isEdgeTtsAvailable(),
     currentVoice,
     popularModels: POPULAR_VELONA_MODELS,
-    kbCategories: [
-      { id: "monetization", label: "Monetization / Offer" },
-      { id: "strategy", label: "Hook / Strategy Rule" },
-      { id: "technical", label: "Product / Tech Spec" },
-      { id: "faq", label: "Audience FAQ Answer" }
-    ],
-    automationModes: [
-      { id: "hybrid_dashboard", label: "Hybrid Studio + Autopilot (Recommended)" },
-      { id: "full_autopilot", label: "100% Hands-Free Full Autopilot" },
-      { id: "review_first", label: "Review Queue Before Publishing" }
-    ],
-    studioTabs: [
-      { id: "video", label: "🎬 9:16 MP4 Reel" },
-      { id: "carousel", label: "🖼️ 4-Slide Carousel" },
-      { id: "code", label: "💻 Remotion .tsx Code" },
-      { id: "caption", label: "📝 Script & Caption" }
-    ],
-    kpiSchema: [
-      {
-        id: "velona",
-        title: "AI ENGINE (VELONA.IN)",
-        badgeKey: "velonaBadge",
-        primaryKey: "activeModelLabel",
-        subtextKey: "velonaStatusText",
-        highlightBorder: false
-      },
-      {
-        id: "meta",
-        title: "FB PAGE ➔ LINKED INSTAGRAM",
-        badgeKey: "metaBadge",
-        primaryKey: "connectedAccountsLabel",
-        subtextKey: "metaStatusText",
-        highlightBorder: false
-      },
-      {
-        id: "engagement",
-        title: "PROFILE SAVE / SHARE SCORE",
-        badgeKey: "algoWeightBadge",
-        primaryKey: "kpiViews",
-        secondaryKey: "kpiSaveRate",
-        subtextKey: "kpiFormatComparison",
-        highlightBorder: false
-      },
-      {
-        id: "revenue",
-        title: "COMMENT ➔ AUTO-DM REVENUE",
-        badgeKey: "triggerKeywordBadge",
-        primaryKey: "kpiRevenue",
-        secondaryKey: "kpiLeads",
-        subtextKey: "pendingLeadsHint",
-        highlightBorder: true
-      }
-    ],
-    settingsSchema: [
-      {
-        sectionId: "velona_section",
-        title: "1. Velona.in OpenAI-Compatible Text API (INR Billed)",
-        colorClass: "text-cyan-400",
-        fields: [
-          {
-            key: "velonaApiKey",
-            envName: "VELONA_API_KEY",
-            label: "Velona API Key (sk-...)",
-            type: "password",
-            placeholder: "Leave blank to keep existing key, or paste sk-...",
-            colSpan: 1
-          },
-          {
-            key: "llmModel",
-            envName: "LLM_MODEL",
-            label: "AI Model (via Velona.in)",
-            type: "select",
-            optionsSource: "popularModels",
-            colSpan: 1
-          },
-          {
-            key: "velonaBaseUrl",
-            envName: "VELONA_BASE_URL",
-            label: "OpenAI-Compatible Base URL",
-            type: "text",
-            placeholder: "https://velona.in/v1",
-            colSpan: 1
-          },
-          {
-            key: "velonaGatewayUrl",
-            envName: "VELONA_GATEWAY_URL",
-            label: "Native Gateway URL",
-            type: "text",
-            placeholder: "https://velona.in/gateway/v1",
-            colSpan: 1
-          }
-        ]
-      },
-      {
-        sectionId: "meta_section",
-        title: "2. Facebook Page Connection (Auto-Discovers Linked Instagram)",
-        colorClass: "text-sky-400",
-        description:
-          "Because your Facebook Page is connected to your Instagram Business/Creator account, you only need your Facebook Page Access Token. The agent automatically fetches your linked instagram_business_account ID and posts to both!",
-        fields: [
-          {
-            key: "fbPageAccessToken",
-            envName: "FB_PAGE_ACCESS_TOKEN",
-            label: "Facebook Page / User Access Token",
-            type: "password",
-            placeholder: "Leave blank to keep existing token, or paste EAAG...",
-            colSpan: 2
-          },
-          {
-            key: "fbPageId",
-            envName: "FB_PAGE_ID",
-            label: "Facebook Page ID (Auto-filled if blank)",
-            type: "text",
-            placeholder: "Auto-discovered from token",
-            colSpan: 1
-          },
-          {
-            key: "igBusinessAccountId",
-            envName: "IG_BUSINESS_ACCOUNT_ID",
-            label: "Linked Instagram Business ID (Auto-filled)",
-            type: "text",
-            placeholder: "Auto-discovered from FB Page",
-            colSpan: 1
-          }
-        ]
-      },
-      {
-        sectionId: "monetization_section",
-        title: "3. Niche, Voice & Comment-to-DM Monetization Funnel",
-        colorClass: "text-emerald-400",
-        fields: [
-          {
-            key: "niche",
-            envName: "NICHE",
-            label: "Niche / Topic Focus",
-            type: "text",
-            placeholder: "AI Agents, Tech Automation & Side Hustle Monetization",
-            colSpan: 1
-          },
-          {
-            key: "dmTriggerKeyword",
-            envName: "DM_TRIGGER_KEYWORD",
-            label: "Comment Trigger Keyword (e.g. AUTO)",
-            type: "text",
-            placeholder: "AUTO",
-            colSpan: 1
-          },
-          {
-            key: "monetizationOffer",
-            envName: "MONETIZATION_OFFER",
-            label: "Monetization Offer Name",
-            type: "text",
-            placeholder: "AI Automation Blueprint (₹499)",
-            colSpan: 1
-          },
-          {
-            key: "monetizationUrl",
-            envName: "MONETIZATION_URL",
-            label: "Payment / Affiliate Link Sent in DM",
-            type: "text",
-            placeholder: "https://...",
-            colSpan: 1
-          },
-          {
-            key: "preferredVideoStyle",
-            envName: "PREFERRED_VIDEO_STYLE",
-            label: "Default Code-to-Video Style",
-            type: "select",
-            optionsSource: "videoStyles",
-            colSpan: 1
-          },
-          {
-            key: "ttsVoice",
-            envName: "TTS_VOICE",
-            label: "Default Neural Voiceover (Edge TTS)",
-            type: "select",
-            optionsSource: "voices",
-            colSpan: 1
-          }
-        ]
-      },
-      {
-        sectionId: "autopilot_section",
-        title: "4. Autopilot Mode & Action Toggles",
-        colorClass: "text-amber-400",
-        fields: [
-          {
-            key: "automationMode",
-            envName: "AUTOMATION_MODE",
-            label: "Operating Mode",
-            type: "select",
-            optionsSource: "automationModes",
-            colSpan: 2
-          },
-          {
-            key: "autoPublishToInstagram",
-            envName: "AUTO_PUBLISH_IG",
-            label: "Auto-Publish Reels to Linked Instagram",
-            type: "checkbox",
-            colSpan: 1
-          },
-          {
-            key: "autoPublishToFacebook",
-            envName: "AUTO_PUBLISH_FB",
-            label: "Auto-Publish Reels to Facebook Page",
-            type: "checkbox",
-            colSpan: 1
-          },
-          {
-            key: "autoReplyComments",
-            envName: "AUTO_REPLY_COMMENTS",
-            label: "Auto-Reply Publicly to Comments",
-            type: "checkbox",
-            colSpan: 1
-          },
-          {
-            key: "autoDmLeads",
-            envName: "AUTO_DM_LEADS",
-            label: "Auto-Send Private Reply DM Offer Link",
-            type: "checkbox",
-            colSpan: 1
-          }
-        ]
-      }
-    ]
+    kbCategories: KB_CATEGORIES,
+    automationModes: AUTOMATION_MODES,
+    studioTabs: STUDIO_TABS,
+    kpiSchema: KPI_SCHEMA,
+    settingsSchema
   };
 }
 

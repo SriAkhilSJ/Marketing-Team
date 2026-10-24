@@ -44,6 +44,42 @@
   ],
   "episodicPostsMemory": [
     {
+      "id": "reel_1792870908279",
+      "hookText": "Why My AI Agent Uses RAG Memory to Never Repeat Instagr...",
+      "topic": "Why My AI Agent Uses RAG Memory to Never Repeat Instagram Hooks",
+      "visualStyle": "fireship_code",
+      "voiceover": "Why My AI Agent Uses RAG Memory to Never Repeat Instagram Hooks. Most creators rely on manual editing or static templates, while programmatic motion systems scale retention automatically. When you replace manual bottlenecks with an automated AI RAG pipeline, every frame and insight compounds from Monetization Offer & Funnel Facts. Watch the execution engine compile vector geometry, kinetic typography, and synchronized audio directly into a high-retention vertical master. Want the complete Why My AI Agent Uses RAG Memory to Never Repeat Instagram Hooks workflow and source architecture? Comment AUTO below and the system will send you the blueprint.",
+      "outcome": "REMEMBERED_REEL",
+      "views": 0,
+      "saveRate": 0,
+      "dmLeads": 0,
+      "recordedAt": "2026-10-24T19:41:51.376Z"
+    },
+    {
+      "id": "reel_1792870904282",
+      "hookText": "How DeepSeek V4 Flash + RAG Memory Automates My IG & FB...",
+      "topic": "How DeepSeek V4 Flash + RAG Memory Automates My IG & FB Reels",
+      "visualStyle": "data_counter",
+      "voiceover": "How DeepSeek V4 Flash + RAG Memory Automates My IG & FB Reels. Most creators rely on manual editing or static templates, while programmatic motion systems scale retention automatically. When you replace manual bottlenecks with an automated DeepSeek RAG pipeline, every frame and insight compounds from Brand Voice & Viral Hook Playbook (2026 IG/FB Algorithm). Watch the execution engine compile vector geometry, kinetic typography, and synchronized audio directly into a high-retention vertical master. Want the complete How DeepSeek V4 Flash + RAG Memory Automates My IG & FB Reels workflow and source architecture? Comment AUTO below and the system will send you the blueprint.",
+      "outcome": "REMEMBERED_REEL",
+      "views": 0,
+      "saveRate": 0,
+      "dmLeads": 0,
+      "recordedAt": "2026-10-24T19:41:48.274Z"
+    },
+    {
+      "id": "reel_1792870736753",
+      "hookText": "How AI Generates Instagram Reels Automatically From Code",
+      "topic": "How AI Generates Instagram Reels Automatically From Code",
+      "visualStyle": "fireship_code",
+      "voiceover": "How AI Generates Instagram Reels Automatically From Code. Most creators rely on manual editing or static templates, while programmatic motion systems scale retention automatically. When you replace manual bottlenecks with an automated AI Reels pipeline, every frame and insight compounds from Brand Voice & Viral Hook Playbook (2026 IG/FB Algorithm). Watch the execution engine compile vector geometry, kinetic typography, and synchronized audio directly into a high-retention vertical master. Want the complete How AI Generates Instagram Reels Automatically From Code workflow and source architecture? Comment AUTO below and the system will send you the blueprint.",
+      "outcome": "REMEMBERED_REEL",
+      "views": 0,
+      "saveRate": 0,
+      "dmLeads": 0,
+      "recordedAt": "2026-10-24T19:39:00.639Z"
+    },
+    {
       "id": "reel_1792831116182",
       "hookText": "My AI Agent Audits My Profile & Writes Video in Code ⚡",
       "topic": "Why My AI Agent Uses RAG Memory to Never Repeat Instagram Hooks",
@@ -111,12 +147,92 @@
       "count": 2
     },
     "@test_buyer_in": {
-      "lastDmAt": "2026-10-24T08:38:34.775Z",
+      "lastDmAt": "2026-10-24T19:41:44.277Z",
       "trigger": "AUTO",
-      "count": 2
+      "count": 4
     }
   },
   "retrievalLogs": [
+    {
+      "id": "rag_q_1792870908278",
+      "timestamp": "2026-10-24T19:41:48.278Z",
+      "query": "Why My AI Agent Uses RAG Memory to Never Repeat Instagram Hooks How do you connect Facebook directly to auto-post Code-to-Video Reels on Instagram and earn money?",
+      "topDocMatch": "E2E Test Offer Rule",
+      "topDocScore": 0.17,
+      "highestEpisodeOverlap": "Why My AI Agent Uses RAG Memory to Never Repeat Instagr...",
+      "overlapScore": 0.602,
+      "dedupPassed": true
+    },
+    {
+      "id": "rag_q_1792870904281",
+      "timestamp": "2026-10-24T19:41:44.281Z",
+      "query": "How DeepSeek V4 Flash + RAG Memory Automates My IG & FB Reels How do you connect Facebook directly to auto-post Code-to-Video Reels on Instagram and earn money?",
+      "topDocMatch": "E2E Test Offer Rule",
+      "topDocScore": 0.116,
+      "highestEpisodeOverlap": "How DeepSeek V4 Flash + RAG Memory Automates My IG & FB...",
+      "overlapScore": 0.594,
+      "dedupPassed": true
+    },
+    {
+      "id": "rag_q_1792870904259",
+      "timestamp": "2026-10-24T19:41:44.259Z",
+      "query": "AUTO comment Instagram Facebook Reels ₹499 Blueprint",
+      "topDocMatch": "E2E Test Offer Rule",
+      "topDocScore": 0.317,
+      "highestEpisodeOverlap": "How AI Generates Instagram Reels Automatically From Code",
+      "overlapScore": 0.155,
+      "dedupPassed": true
+    },
+    {
+      "id": "rag_q_1792870773498",
+      "timestamp": "2026-10-24T19:39:33.498Z",
+      "query": "Why My AI Agent Uses RAG Memory to Never Repeat Instagram Hooks How do you connect Facebook directly to auto-post Code-to-Video Reels on Instagram and earn money?",
+      "topDocMatch": "E2E Test Offer Rule",
+      "topDocScore": 0.17,
+      "highestEpisodeOverlap": "My AI Agent Audits My Profile & Writes Video in Code ⚡",
+      "overlapScore": 0.416,
+      "dedupPassed": true
+    },
+    {
+      "id": "rag_q_1792870769621",
+      "timestamp": "2026-10-24T19:39:29.621Z",
+      "query": "How DeepSeek V4 Flash + RAG Memory Automates My IG & FB Reels How do you connect Facebook directly to auto-post Code-to-Video Reels on Instagram and earn money?",
+      "topDocMatch": "E2E Test Offer Rule",
+      "topDocScore": 0.116,
+      "highestEpisodeOverlap": "How AI Generates Instagram Reels Automatically From Code",
+      "overlapScore": 0.208,
+      "dedupPassed": true
+    },
+    {
+      "id": "rag_q_1792870769603",
+      "timestamp": "2026-10-24T19:39:29.603Z",
+      "query": "AUTO comment Instagram Facebook Reels ₹499 Blueprint",
+      "topDocMatch": "E2E Test Offer Rule",
+      "topDocScore": 0.317,
+      "highestEpisodeOverlap": "How AI Generates Instagram Reels Automatically From Code",
+      "overlapScore": 0.155,
+      "dedupPassed": true
+    },
+    {
+      "id": "rag_q_1792870736751",
+      "timestamp": "2026-10-24T19:38:56.751Z",
+      "query": "How AI Generates Instagram Reels Automatically From Code How do you connect Facebook directly to auto-post Code-to-Video Reels on Instagram and earn money?",
+      "topDocMatch": "E2E Test Offer Rule",
+      "topDocScore": 0.16,
+      "highestEpisodeOverlap": "How AI Generates Instagram Reels Automatically From Code",
+      "overlapScore": 0.574,
+      "dedupPassed": true
+    },
+    {
+      "id": "rag_q_1792870477155",
+      "timestamp": "2026-10-24T19:34:37.155Z",
+      "query": "How AI Generates Instagram Reels Automatically From Code How do you connect Facebook directly to auto-post Code-to-Video Reels on Instagram and earn money?",
+      "topDocMatch": "E2E Test Offer Rule",
+      "topDocScore": 0.16,
+      "highestEpisodeOverlap": "My AI Agent Audits My Profile & Writes Video in Code ⚡",
+      "overlapScore": 0.227,
+      "dedupPassed": true
+    },
     {
       "id": "rag_q_1792831116182",
       "timestamp": "2026-10-24T08:38:36.182Z",
@@ -197,5 +313,7 @@
       "overlapScore": 0.27,
       "dedupPassed": true
     }
-  ]
+  ],
+  "knowledgeBase": [],
+  "episodicPostMemory": []
 }

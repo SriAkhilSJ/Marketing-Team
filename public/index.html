@@ -3,75 +3,114 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Autonomous AI Reels & Posts Agent — Dynamic Studio</title>
+  <title>AUTONOMOUS REELS // MONOCHROME STUDIO</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600;700&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+    :root {
+      color-scheme: dark;
+    }
     body {
-      font-family: 'Inter', system-ui, sans-serif;
-      background: #060913;
-      color: #f8fafc;
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      background-color: #000000;
+      background-image: radial-gradient(rgba(255, 255, 255, 0.07) 1px, transparent 1px);
+      background-size: 24px 24px;
+      color: #ffffff;
     }
     code, pre, .mono {
       font-family: 'JetBrains Mono', monospace;
     }
-    .glass {
-      background: rgba(15, 23, 42, 0.78);
-      backdrop-filter: blur(14px);
-      border: 1px solid rgba(148, 163, 184, 0.16);
+    .mono-card {
+      background: #09090b;
+      border: 1px solid #27272a;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.85);
     }
-    .glow-cyan {
-      box-shadow: 0 0 35px rgba(0, 242, 254, 0.16);
+    .mono-subcard {
+      background: #000000;
+      border: 1px solid #27272a;
+    }
+    .mono-input {
+      background: #000000;
+      border: 1px solid #27272a;
+      color: #ffffff;
+      transition: border-color 0.15s ease;
+    }
+    .mono-input:focus {
+      border-color: #ffffff;
+      outline: none;
+    }
+    .btn-primary {
+      background: #ffffff;
+      color: #000000;
+      font-weight: 700;
+      transition: all 0.15s ease;
+    }
+    .btn-primary:hover {
+      background: #e4e4e7;
+    }
+    .btn-secondary {
+      background: #09090b;
+      color: #f4f4f5;
+      border: 1px solid #27272a;
+      font-weight: 600;
+      transition: all 0.15s ease;
+    }
+    .btn-secondary:hover {
+      background: #18181b;
+      border-color: #52525b;
     }
     ::-webkit-scrollbar {
-      width: 7px;
-      height: 7px;
+      width: 6px;
+      height: 6px;
     }
     ::-webkit-scrollbar-track {
-      background: #090d16;
+      background: #000000;
     }
     ::-webkit-scrollbar-thumb {
-      background: #334155;
+      background: #27272a;
       border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #52525b;
     }
   </style>
 </head>
-<body class="min-h-screen antialiased selection:bg-cyan-500 selection:text-slate-950">
-  <!-- Top Header (Populated dynamically from /api/config) -->
-  <header class="sticky top-0 z-30 border-b border-slate-800/80 bg-slate-950/90 backdrop-blur-md">
+<body class="min-h-screen antialiased selection:bg-white selection:text-black">
+  <!-- Top Monochrome Header (Populated dynamically from /api/config) -->
+  <header class="sticky top-0 z-30 border-b border-zinc-800 bg-black/95 backdrop-blur-md">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 py-3.5 flex flex-wrap items-center justify-between gap-3">
-      <div class="flex items-center gap-3">
-        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-400 via-sky-500 to-indigo-600 flex items-center justify-center font-black text-slate-950 text-lg shadow-lg shadow-cyan-500/20">
-          ⚡
+      <div class="flex items-center gap-3.5">
+        <div class="w-9 h-9 rounded-lg bg-white text-black flex items-center justify-center font-black mono text-sm tracking-tighter">
+          M//S
         </div>
         <div>
-          <div class="flex items-center gap-2">
-            <h1 id="appTitle" class="font-extrabold text-base sm:text-lg tracking-tight text-white"></h1>
-            <span id="appBadge" class="px-2 py-0.5 text-[11px] font-bold rounded-full bg-cyan-500/15 text-cyan-300 border border-cyan-500/30"></span>
+          <div class="flex items-center gap-2.5">
+            <h1 id="appTitle" class="font-extrabold text-sm sm:text-base tracking-tight text-white mono"></h1>
+            <span id="appBadge" class="px-2 py-0.5 text-[10px] font-bold rounded bg-zinc-900 text-zinc-300 border border-zinc-700 mono"></span>
           </div>
-          <p id="appSubtitle" class="text-xs text-slate-400"></p>
+          <p id="appSubtitle" class="text-[11px] text-zinc-400 mono"></p>
         </div>
       </div>
 
-      <div class="flex items-center gap-2.5">
+      <div class="flex items-center gap-2">
         <a
           href="#memoryRagSection"
-          class="px-3.5 py-2 rounded-xl font-semibold text-xs sm:text-sm bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-300 border border-indigo-500/40 transition flex items-center gap-1.5"
+          class="btn-secondary px-3 py-2 rounded-lg text-xs mono flex items-center gap-1.5"
         >
-          <span>🧠 Memory & RAG Vault</span>
+          <span>[RAG VAULT]</span>
         </a>
         <button
           onclick="runFullAutopilot()"
           id="btnAutopilot"
-          class="px-4 py-2 rounded-xl font-bold text-xs sm:text-sm bg-gradient-to-r from-cyan-400 to-sky-500 text-slate-950 hover:brightness-110 transition shadow-lg shadow-cyan-500/20 flex items-center gap-2"
+          class="btn-primary px-4 py-2 rounded-lg text-xs mono flex items-center gap-2"
         >
-          <span>🚀 Run Full Autopilot Loop Now</span>
+          <span>RUN AUTOPILOT LOOP -&gt;</span>
         </button>
         <button
           onclick="toggleSettingsModal(true)"
-          class="px-3.5 py-2 rounded-xl font-semibold text-xs sm:text-sm bg-slate-800/90 hover:bg-slate-700 text-slate-200 border border-slate-700 transition flex items-center gap-1.5"
+          class="btn-secondary px-3 py-2 rounded-lg text-xs mono flex items-center gap-1.5"
         >
-          <span>⚙️ Keys & FB Connection</span>
+          <span>CONFIG // .ENV</span>
         </button>
       </div>
     </div>
@@ -79,109 +118,109 @@
 
   <main class="max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-6">
     <!-- Status Toast -->
-    <div id="statusToast" class="hidden rounded-xl p-3.5 text-sm font-medium border bg-cyan-950/60 border-cyan-500/40 text-cyan-200 flex items-center justify-between">
+    <div id="statusToast" class="hidden rounded-lg p-3.5 text-xs mono border bg-zinc-950 border-white text-white flex items-center justify-between">
       <span id="statusToastText"></span>
-      <button onclick="document.getElementById('statusToast').classList.add('hidden')" class="text-xs underline ml-4">Dismiss</button>
+      <button onclick="document.getElementById('statusToast').classList.add('hidden')" class="text-[11px] underline ml-4 text-zinc-400 hover:text-white">DISMISS</button>
     </div>
 
     <!-- Dynamic KPI Strip (Rendered from uiConfig.kpiSchema) -->
-    <section id="kpiGrid" class="grid grid-cols-1 md:grid-cols-4 gap-4"></section>
+    <section id="kpiGrid" class="grid grid-cols-1 md:grid-cols-4 gap-3.5"></section>
 
     <!-- Main 2-Column Workspace -->
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
       <!-- LEFT COLUMN (7 cols): Profile Audit + Actions + Comment Funnel + Memory/RAG Vault -->
       <div class="lg:col-span-7 space-y-6">
         <!-- Step 1: Profile Content Analysis -->
-        <div class="glass rounded-2xl p-5 space-y-4">
-          <div class="flex flex-wrap items-center justify-between gap-2">
+        <div class="mono-card rounded-xl p-5 space-y-4">
+          <div class="flex flex-wrap items-center justify-between gap-2 border-b border-zinc-800/80 pb-3">
             <div>
-              <span class="text-[11px] font-bold uppercase tracking-wider text-cyan-400">Step 1 • Profile Intelligence</span>
-              <h2 class="text-lg font-extrabold text-white">Instagram & Facebook Content Audit</h2>
+              <span class="text-[10px] font-bold uppercase tracking-widest text-zinc-400 mono">01 // PROFILE INTELLIGENCE</span>
+              <h2 class="text-base font-extrabold text-white">Instagram &amp; Facebook Content Audit</h2>
             </div>
             <button
               onclick="analyzeProfileNow()"
               id="btnAnalyze"
-              class="px-3 py-1.5 rounded-lg text-xs font-bold bg-slate-800 hover:bg-slate-700 text-cyan-300 border border-cyan-500/30 transition"
+              class="btn-secondary px-3 py-1.5 rounded-lg text-xs mono"
             >
-              🔍 Re-Analyze Profile Content
+              RE-ANALYZE PROFILE -&gt;
             </button>
           </div>
 
-          <div class="rounded-xl p-4 bg-slate-900/90 border border-slate-800 space-y-2">
+          <div class="mono-subcard rounded-lg p-4 space-y-3">
             <div class="flex items-center justify-between text-xs">
-              <span class="font-bold text-emerald-400">🧠 Agent Diagnosis & Strategy Prescription</span>
-              <span id="analysisSourceLabel" class="text-slate-400 mono text-[11px]"></span>
+              <span class="font-bold text-white mono">AGENT DIAGNOSIS &amp; PRESCRIPTION</span>
+              <span id="analysisSourceLabel" class="text-zinc-500 mono text-[11px]"></span>
             </div>
-            <p id="diagnosisSummary" class="text-sm text-slate-200 leading-relaxed"></p>
+            <p id="diagnosisSummary" class="text-xs text-zinc-300 leading-relaxed"></p>
 
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
-              <div class="rounded-lg p-3 bg-emerald-950/30 border border-emerald-500/20">
-                <div class="text-xs font-bold text-emerald-300 mb-1.5">✅ Winning Patterns (Scale Up)</div>
-                <ul id="winningPatternsList" class="text-xs text-slate-300 space-y-1 list-disc list-inside"></ul>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+              <div class="rounded-lg p-3 bg-zinc-950 border border-zinc-800">
+                <div class="text-[11px] font-bold text-white mono mb-1.5">[+] WINNING PATTERNS (SCALE)</div>
+                <ul id="winningPatternsList" class="text-xs text-zinc-300 space-y-1 list-disc list-inside"></ul>
               </div>
-              <div class="rounded-lg p-3 bg-rose-950/30 border border-rose-500/20">
-                <div class="text-xs font-bold text-rose-300 mb-1.5">🛑 Drop Immediately</div>
-                <ul id="dropPatternsList" class="text-xs text-slate-300 space-y-1 list-disc list-inside"></ul>
+              <div class="rounded-lg p-3 bg-zinc-950 border border-zinc-800">
+                <div class="text-[11px] font-bold text-zinc-400 mono mb-1.5">[-] DROP IMMEDIATELY</div>
+                <ul id="dropPatternsList" class="text-xs text-zinc-400 space-y-1 list-disc list-inside"></ul>
               </div>
             </div>
           </div>
 
           <div>
-            <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2.5">
-              Recent IG & FB Posts Audited by Agent
+            <h3 class="text-[11px] font-bold uppercase tracking-widest text-zinc-500 mono mb-2.5">
+              AUDITED PROFILE POSTS (IG + FB)
             </h3>
-            <div id="recentPostsContainer" class="space-y-2.5"></div>
+            <div id="recentPostsContainer" class="space-y-2"></div>
           </div>
         </div>
 
         <!-- Step 2: Autonomous Actions Queue -->
-        <div class="glass rounded-2xl p-5 space-y-4">
-          <div class="flex flex-wrap items-center justify-between gap-2">
+        <div class="mono-card rounded-xl p-5 space-y-4">
+          <div class="flex flex-wrap items-center justify-between gap-2 border-b border-zinc-800/80 pb-3">
             <div>
-              <span class="text-[11px] font-bold uppercase tracking-wider text-amber-400">Step 2 • Autonomous Execution</span>
-              <h2 class="text-lg font-extrabold text-white">Actions Queued From Your Profile Audit</h2>
+              <span class="text-[10px] font-bold uppercase tracking-widest text-zinc-400 mono">02 // AUTONOMOUS EXECUTION</span>
+              <h2 class="text-base font-extrabold text-white">Action Queue Derived From Audit</h2>
             </div>
-            <span class="text-xs text-slate-400">Click any action or run full autopilot</span>
+            <span class="text-[11px] text-zinc-500 mono">EXECUTE INDIVIDUALLY OR VIA AUTOPILOT</span>
           </div>
-          <div id="actionsQueueContainer" class="space-y-2.5"></div>
+          <div id="actionsQueueContainer" class="space-y-2"></div>
         </div>
 
         <!-- Step 3: Comment-to-DM Monetization Funnel -->
-        <div class="glass rounded-2xl p-5 space-y-4">
-          <div class="flex flex-wrap items-center justify-between gap-2">
+        <div class="mono-card rounded-xl p-5 space-y-4">
+          <div class="flex flex-wrap items-center justify-between gap-2 border-b border-zinc-800/80 pb-3">
             <div>
-              <span class="text-[11px] font-bold uppercase tracking-wider text-emerald-400">Step 3 • Earn Money on Autopilot</span>
-              <h2 class="text-lg font-extrabold text-white">Comment Auto-Reply & Private DM Funnel</h2>
+              <span class="text-[10px] font-bold uppercase tracking-widest text-zinc-400 mono">03 // MONETIZATION ENGINE</span>
+              <h2 class="text-base font-extrabold text-white">Comment Auto-Reply &amp; Private DM Funnel</h2>
             </div>
             <button
               onclick="processAllComments()"
               id="btnProcessComments"
-              class="px-3.5 py-1.5 rounded-lg text-xs font-bold bg-emerald-500 text-slate-950 hover:bg-emerald-400 transition"
+              class="btn-primary px-3.5 py-1.5 rounded-lg text-xs mono"
             >
-              ⚡ Reply & DM All Pending Leads
+              PROCESS ALL PENDING LEADS -&gt;
             </button>
           </div>
 
-          <div class="flex flex-wrap sm:flex-nowrap gap-2 bg-slate-900/80 p-2.5 rounded-xl border border-slate-800">
+          <div class="flex flex-wrap sm:flex-nowrap gap-2 mono-subcard p-2.5 rounded-lg">
             <input
               id="simCommentUser"
               type="text"
               placeholder="@viewer_handle"
               value="@rohan_founder"
-              class="w-36 px-2.5 py-1.5 rounded-lg bg-slate-950 border border-slate-800 text-xs text-white"
+              class="w-36 px-2.5 py-1.5 rounded mono-input text-xs mono"
             />
             <input
               id="simCommentText"
               type="text"
               placeholder="Type a comment like 'AUTO' or ask a question..."
-              value="AUTO — please send the Velona + Reel setup link!"
-              class="flex-1 px-3 py-1.5 rounded-lg bg-slate-950 border border-slate-800 text-xs text-white"
+              value="AUTO - please send the architecture & setup link!"
+              class="flex-1 px-3 py-1.5 rounded mono-input text-xs"
             />
             <button
               onclick="simulateAndProcessComment()"
-              class="px-3 py-1.5 rounded-lg text-xs font-bold bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 hover:bg-cyan-500/30 whitespace-nowrap"
+              class="btn-secondary px-3 py-1.5 rounded text-xs mono whitespace-nowrap"
             >
-              + Simulate Comment & Trigger DM
+              + SIMULATE COMMENT &amp; DM
             </button>
           </div>
 
@@ -189,75 +228,75 @@
         </div>
 
         <!-- Step 4: Persistent Memory & RAG Knowledge Vault -->
-        <div id="memoryRagSection" class="glass rounded-2xl p-5 space-y-4 border-indigo-500/30">
-          <div class="flex flex-wrap items-center justify-between gap-2">
+        <div id="memoryRagSection" class="mono-card rounded-xl p-5 space-y-4">
+          <div class="flex flex-wrap items-center justify-between gap-2 border-b border-zinc-800/80 pb-3">
             <div>
-              <span class="text-[11px] font-bold uppercase tracking-wider text-indigo-400">Step 4 • Persistent Brain (RAG + Episodic Memory)</span>
-              <h2 class="text-lg font-extrabold text-white">🧠 Memory & RAG Knowledge Vault</h2>
+              <span class="text-[10px] font-bold uppercase tracking-widest text-zinc-400 mono">04 // PERSISTENT MEMORY (RAG + EPISODIC)</span>
+              <h2 class="text-base font-extrabold text-white">Memory &amp; RAG Knowledge Vault</h2>
             </div>
-            <span id="memorySessionBadge" class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-indigo-500/15 text-indigo-300 border border-indigo-500/30 mono"></span>
+            <span id="memorySessionBadge" class="px-2.5 py-1 rounded text-[11px] font-bold bg-zinc-900 text-zinc-300 border border-zinc-700 mono"></span>
           </div>
 
-          <div class="p-3.5 rounded-xl bg-slate-900/90 border border-slate-800 space-y-2.5">
-            <div class="text-xs font-bold text-indigo-300">🔎 Test RAG Retrieval & Anti-Duplicate Hook Guard</div>
+          <div class="p-3.5 rounded-lg mono-subcard space-y-2.5">
+            <div class="text-[11px] font-bold text-zinc-300 mono">TEST RAG RETRIEVAL &amp; ANTI-DUPLICATE HOOK GUARD</div>
             <div class="flex flex-wrap sm:flex-nowrap gap-2">
               <input
                 id="ragQueryInput"
                 type="text"
                 placeholder="Type a topic or hook to test RAG retrieval & duplicate similarity..."
                 value="DeepSeek V4 Flash cost per Reel and comment trigger funnel"
-                class="flex-1 px-3 py-1.5 rounded-lg bg-slate-950 border border-slate-800 text-xs text-white"
+                class="flex-1 px-3 py-1.5 rounded mono-input text-xs"
               />
               <button
                 onclick="runRagTestQuery()"
-                class="px-3.5 py-1.5 rounded-lg text-xs font-bold bg-indigo-500 text-white hover:bg-indigo-400 transition whitespace-nowrap"
+                class="btn-secondary px-3.5 py-1.5 rounded text-xs mono whitespace-nowrap"
               >
-                🔎 Query RAG Memory
+                QUERY RAG -&gt;
               </button>
             </div>
-            <div id="ragQueryResultBox" class="hidden p-3 rounded-lg bg-slate-950 border border-indigo-500/30 text-xs space-y-1.5"></div>
+            <div id="ragQueryResultBox" class="hidden p-3 rounded bg-zinc-950 border border-zinc-700 text-xs space-y-1.5"></div>
           </div>
 
-          <div class="p-3.5 rounded-xl bg-slate-900/90 border border-slate-800 space-y-2.5">
-            <div class="text-xs font-bold text-cyan-300">➕ Teach Agent New Knowledge / Brand Fact / Offer (Added to RAG)</div>
+          <div class="p-3.5 rounded-lg mono-subcard space-y-2.5">
+            <div class="text-[11px] font-bold text-zinc-300 mono">ADD FACT / OFFER TO PERSISTENT RAG KNOWLEDGE BASE</div>
             <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
               <input
                 id="kbTitleInput"
                 type="text"
-                placeholder="Doc Title (e.g., New Course Offer)"
-                class="sm:col-span-2 px-3 py-1.5 rounded-lg bg-slate-950 border border-slate-800 text-xs text-white"
+                placeholder="Fact Title (e.g., Core Offer Stack)"
+                class="sm:col-span-2 px-3 py-1.5 rounded mono-input text-xs"
               />
               <select
                 id="kbCategoryInput"
-                class="px-2.5 py-1.5 rounded-lg bg-slate-950 border border-slate-800 text-xs text-white"
+                class="px-2.5 py-1.5 rounded mono-input text-xs mono"
               ></select>
             </div>
             <div class="flex flex-wrap sm:flex-nowrap gap-2">
               <input
                 id="kbContentInput"
                 type="text"
-                placeholder="Write fact, pricing, hook rule, or product URL for the agent to remember in every future Reel..."
-                class="flex-1 px-3 py-1.5 rounded-lg bg-slate-950 border border-slate-800 text-xs text-white"
+                placeholder="Write fact, pricing, hook rule, or product URL for the agent to remember..."
+                class="flex-1 px-3 py-1.5 rounded mono-input text-xs"
               />
               <button
                 onclick="addNewKnowledgeDoc()"
-                class="px-3.5 py-1.5 rounded-lg text-xs font-bold bg-cyan-500 text-slate-950 hover:bg-cyan-400 transition whitespace-nowrap"
+                class="btn-primary px-3.5 py-1.5 rounded text-xs mono whitespace-nowrap"
               >
-                + Save to RAG Memory
+                + SAVE FACT
               </button>
             </div>
           </div>
 
           <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div>
-              <div class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">
-                📚 RAG Knowledge Base (<span id="kbCountLabel">0</span> Docs)
+              <div class="text-[11px] font-bold uppercase tracking-widest text-zinc-400 mono mb-2">
+                RAG KNOWLEDGE BASE (<span id="kbCountLabel">0</span> DOCS)
               </div>
               <div id="knowledgeDocsList" class="space-y-2 max-h-60 overflow-y-auto pr-1"></div>
             </div>
             <div>
-              <div class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">
-                🗂️ Episodic Reels Memory (<span id="episodicCountLabel">0</span> Remembered)
+              <div class="text-[11px] font-bold uppercase tracking-widest text-zinc-400 mono mb-2">
+                EPISODIC REELS MEMORY (<span id="episodicCountLabel">0</span> SAVED)
               </div>
               <div id="episodicMemoryList" class="space-y-2 max-h-60 overflow-y-auto pr-1"></div>
             </div>
@@ -265,98 +304,115 @@
         </div>
       </div>
 
-      <!-- RIGHT COLUMN (5 cols): Dynamic Code-to-Video Studio & Player -->
+      <!-- RIGHT COLUMN (5 cols): Monochrome Code-to-Video Studio & Player -->
       <div class="lg:col-span-5 space-y-6">
-        <div class="glass rounded-2xl p-5 space-y-4 glow-cyan">
-          <div class="flex items-center justify-between">
+        <div class="mono-card rounded-xl p-5 space-y-4">
+          <div class="flex items-center justify-between border-b border-zinc-800/80 pb-3">
             <div>
-              <span class="text-[11px] font-bold uppercase tracking-wider text-cyan-400">Code-to-Video Studio</span>
-              <h2 class="text-lg font-extrabold text-white">Programmatic 9:16 Reel & Carousel</h2>
+              <span class="text-[10px] font-bold uppercase tracking-widest text-zinc-400 mono">CODE-TO-VIDEO ENGINE</span>
+              <h2 class="text-base font-extrabold text-white">Procedural 9:16 MP4 &amp; Carousel Studio</h2>
             </div>
-            <span class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-cyan-500/15 text-cyan-300 border border-cyan-500/30">
-              No Video API Keys Needed
+            <span class="px-2 py-1 rounded text-[10px] font-bold bg-white text-black mono">
+              30 FPS MONOCHROME
             </span>
           </div>
 
           <!-- Dynamic Controls (Populated from /api/config & /api/voices) -->
-          <div class="bg-slate-900/90 p-3.5 rounded-xl border border-slate-800 space-y-3">
+          <div class="mono-subcard p-3.5 rounded-lg space-y-3">
             <div>
-              <label class="block text-xs font-semibold text-slate-300 mb-1">
-                Topic / Hook Angle (Leave blank to use Profile Analyzer's #1 recommendation)
+              <label class="block text-[11px] font-semibold text-zinc-300 mono mb-1">
+                TOPIC / THESIS ANGLE (LEAVE BLANK FOR #1 AUDIT RECOMMENDATION)
               </label>
               <input
                 id="customTopicInput"
                 type="text"
-                placeholder="e.g., How AI generates Instagram Reels automatically from code..."
-                class="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-800 text-xs text-white focus:border-cyan-400 outline-none"
+                placeholder="e.g., How AI Generates Instagram Reels Automatically From Code"
+                class="w-full px-3 py-2 rounded mono-input text-xs"
               />
             </div>
 
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5 items-end">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
               <div>
-                <label class="block text-xs font-semibold text-slate-300 mb-1">Code-to-Video Style</label>
+                <label class="block text-[11px] font-semibold text-zinc-400 mono mb-1">MOTION ARCHITECTURE</label>
                 <select
                   id="videoStyleSelect"
-                  class="w-full px-2.5 py-2 rounded-lg bg-slate-950 border border-slate-800 text-xs text-white"
+                  class="w-full px-2.5 py-2 rounded mono-input text-xs mono"
                 ></select>
               </div>
               <div>
                 <div class="flex items-center justify-between mb-1">
-                  <label class="text-xs font-semibold text-slate-300">🎙️ Voiceover</label>
+                  <label class="text-[11px] font-semibold text-zinc-400 mono">NEURAL VOICEOVER</label>
                   <span id="ttsStatusBadge"></span>
                 </div>
                 <select
                   id="ttsVoiceSelect"
-                  class="w-full px-2.5 py-2 rounded-lg bg-slate-950 border border-slate-800 text-xs text-white"
+                  class="w-full px-2.5 py-2 rounded mono-input text-xs mono"
                 ></select>
               </div>
-              <div>
-                <button
-                  onclick="generateNewCodeReel()"
-                  id="btnGenerateReel"
-                  class="w-full py-2 px-3 rounded-lg font-bold text-xs bg-gradient-to-r from-cyan-400 to-sky-500 text-slate-950 hover:brightness-110 transition"
-                >
-                  🎬 Write Code & Render 9:16 MP4
-                </button>
-              </div>
             </div>
+
+            <button
+              onclick="generateNewCodeReel()"
+              id="btnGenerateReel"
+              class="btn-primary w-full py-2.5 px-4 rounded-lg text-xs mono tracking-wide"
+            >
+              COMPILE &amp; RENDER 9:16 MP4 MASTER -&gt;
+            </button>
           </div>
 
           <!-- Dynamic Studio Tabs Bar -->
-          <div id="studioTabsBar" class="flex border-b border-slate-800 text-xs font-bold"></div>
+          <div id="studioTabsBar" class="flex border-b border-zinc-800 text-[11px] font-bold mono"></div>
 
           <!-- TAB: Video -->
-          <div id="studioTab_video" class="space-y-3">
+          <div id="studioTab_video" class="space-y-3.5">
             <div class="flex items-center justify-between text-xs">
-              <span id="activeReelTitle" class="font-bold text-white truncate max-w-[260px]"></span>
-              <span id="activeReelStatus" class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300"></span>
+              <span id="activeReelTitle" class="font-bold text-white truncate max-w-[270px] mono"></span>
+              <span id="activeReelStatus" class="px-2 py-0.5 rounded text-[10px] font-bold bg-zinc-900 text-white border border-zinc-700 mono"></span>
             </div>
 
-            <div class="relative mx-auto w-full max-w-[290px] aspect-[9/16] rounded-2xl overflow-hidden border-2 border-slate-700 bg-slate-950 shadow-2xl">
-              <video id="reelVideoPlayer" class="w-full h-full object-cover" controls autoplay muted loop playsinline></video>
+            <!-- 9:16 Vertical Master Player (object-contain so zero pixels are ever cropped) -->
+            <div class="relative mx-auto w-full max-w-[300px] aspect-[9/16] rounded-2xl overflow-hidden border border-zinc-700 bg-black shadow-2xl">
+              <video
+                id="reelVideoPlayer"
+                class="w-full h-full object-contain bg-black"
+                controls
+                autoplay
+                muted
+                loop
+                playsinline
+              ></video>
             </div>
 
-            <div class="flex flex-wrap gap-2 justify-center">
+            <!-- 4-Stage Scene Inspector (Click any stage to seek the MP4 video to that scene) -->
+            <div>
+              <div class="flex items-center justify-between text-[10px] text-zinc-500 mono mb-1.5">
+                <span>4-STAGE PROCEDURAL SCENE INSPECTOR</span>
+                <span>CLICK STAGE TO SEEK VIDEO</span>
+              </div>
+              <div id="sceneInspectorGrid" class="grid grid-cols-2 gap-1.5"></div>
+            </div>
+
+            <div class="flex flex-wrap gap-2 justify-center pt-1">
               <button
                 onclick="speakActiveVoiceover()"
-                class="px-3 py-2 rounded-xl text-xs font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/40 hover:bg-indigo-500/30 transition"
+                class="btn-secondary px-3 py-2 rounded-lg text-xs mono"
               >
-                🔊 Play Voiceover + Video
+                PLAY AUDIO + VIDEO
               </button>
               <a
                 id="downloadMp4Link"
                 href="#"
                 download
-                class="px-3 py-2 rounded-xl text-xs font-bold bg-slate-800 text-slate-200 border border-slate-700 hover:bg-slate-700 transition"
+                class="btn-secondary px-3 py-2 rounded-lg text-xs mono"
               >
-                ⬇️ Download .MP4
+                DOWNLOAD .MP4
               </a>
               <button
                 onclick="publishActiveReel()"
                 id="btnPublishActive"
-                class="px-3.5 py-2 rounded-xl text-xs font-bold bg-emerald-500 text-slate-950 hover:bg-emerald-400 transition"
+                class="btn-primary px-3.5 py-2 rounded-lg text-xs mono"
               >
-                📲 Publish to IG + FB Now
+                PUBLISH IG + FB -&gt;
               </button>
             </div>
           </div>
@@ -368,27 +424,27 @@
 
           <!-- TAB: Code -->
           <div id="studioTab_code" class="hidden space-y-2">
-            <div class="flex items-center justify-between text-xs text-slate-400">
-              <span>Generated React / Remotion Component (<code>.tsx</code>)</span>
-              <button onclick="copyRemotionCode()" class="text-cyan-400 hover:underline font-semibold">Copy Code</button>
+            <div class="flex items-center justify-between text-xs text-zinc-400 mono">
+              <span>GENERATED REMOTION COMPONENT (.TSX)</span>
+              <button onclick="copyRemotionCode()" class="text-white hover:underline font-semibold">COPY CODE</button>
             </div>
-            <pre id="remotionCodeBox" class="p-3 rounded-xl bg-slate-950 border border-slate-800 text-[11px] text-cyan-300 overflow-x-auto max-h-[420px]"></pre>
+            <pre id="remotionCodeBox" class="p-3 rounded-lg bg-black border border-zinc-800 text-[11px] text-zinc-200 overflow-x-auto max-h-[420px]"></pre>
           </div>
 
           <!-- TAB: Caption -->
           <div id="studioTab_caption" class="hidden space-y-3">
             <div>
-              <div class="text-xs font-bold text-slate-400 mb-1">🎙️ Neural Voiceover Script</div>
-              <div id="voiceoverTextBox" class="p-3 rounded-xl bg-slate-950 border border-slate-800 text-xs text-slate-200 leading-relaxed"></div>
+              <div class="text-[11px] font-bold text-zinc-400 mono mb-1">VOICEOVER TRANSCRIPT</div>
+              <div id="voiceoverTextBox" class="p-3 rounded-lg bg-black border border-zinc-800 text-xs text-zinc-200 leading-relaxed"></div>
             </div>
             <div>
-              <div class="text-xs font-bold text-slate-400 mb-1">📝 Viral Caption + Comment-to-DM Trigger</div>
-              <pre id="captionTextBox" class="p-3 rounded-xl bg-slate-950 border border-slate-800 text-xs text-slate-200 whitespace-pre-wrap font-sans leading-relaxed max-h-60 overflow-y-auto"></pre>
+              <div class="text-[11px] font-bold text-zinc-400 mono mb-1">CAPTION &amp; COMMENT-TO-DM TRIGGER</div>
+              <pre id="captionTextBox" class="p-3 rounded-lg bg-black border border-zinc-800 text-xs text-zinc-200 whitespace-pre-wrap font-sans leading-relaxed max-h-60 overflow-y-auto"></pre>
             </div>
           </div>
 
-          <div class="pt-2 border-t border-slate-800/80">
-            <div class="text-xs font-bold text-slate-400 mb-2">Generated Reels Queue</div>
+          <div class="pt-3 border-t border-zinc-800/80">
+            <div class="text-[11px] font-bold text-zinc-400 mono mb-2">GENERATED REELS ARCHIVE</div>
             <div id="reelQueueList" class="space-y-1.5 max-h-40 overflow-y-auto"></div>
           </div>
         </div>
@@ -397,24 +453,24 @@
   </main>
 
   <!-- Dynamic Schema-Driven Settings Modal -->
-  <div id="settingsModal" class="hidden fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4">
-    <div class="glass rounded-2xl max-w-2xl w-full p-6 space-y-5 max-h-[90vh] overflow-y-auto border border-slate-700">
-      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+  <div id="settingsModal" class="hidden fixed inset-0 z-50 bg-black/85 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="mono-card rounded-xl max-w-2xl w-full p-6 space-y-5 max-h-[90vh] overflow-y-auto border border-zinc-700">
+      <div class="flex items-center justify-between border-b border-zinc-800 pb-3">
         <div>
-          <h3 class="text-lg font-extrabold text-white">⚙️ Agent Configuration & Environment Schema</h3>
-          <p class="text-xs text-slate-400">Rendered dynamically from <code>GET /api/config</code> • Persisted to <code>.env</code></p>
+          <h3 class="text-base font-extrabold text-white mono">AGENT CONFIGURATION // .ENV SCHEMA</h3>
+          <p class="text-xs text-zinc-400 mono">Loaded dynamically from <code>GET /api/config</code> • Persisted to <code>.env</code></p>
         </div>
-        <button onclick="toggleSettingsModal(false)" class="text-slate-400 hover:text-white text-xl font-bold">&times;</button>
+        <button onclick="toggleSettingsModal(false)" class="text-zinc-400 hover:text-white text-xl font-bold mono">&times;</button>
       </div>
 
       <div id="dynamicSettingsForm" class="space-y-4 text-xs"></div>
 
       <div class="flex justify-end gap-2 pt-2">
-        <button onclick="toggleSettingsModal(false)" class="px-4 py-2 rounded-xl text-xs font-bold bg-slate-800 text-slate-300">
-          Cancel
+        <button onclick="toggleSettingsModal(false)" class="btn-secondary px-4 py-2 rounded-lg text-xs mono">
+          CANCEL
         </button>
-        <button onclick="saveSettings()" class="px-5 py-2 rounded-xl text-xs font-bold bg-gradient-to-r from-cyan-400 to-sky-500 text-slate-950">
-          💾 Save to .env & Sync Accounts
+        <button onclick="saveSettings()" class="btn-primary px-5 py-2 rounded-lg text-xs mono">
+          SAVE TO .ENV &amp; SYNC -&gt;
         </button>
       </div>
     </div>
