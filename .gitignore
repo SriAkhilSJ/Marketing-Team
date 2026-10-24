@@ -1,0 +1,6 @@
+node_modules/
+.env
+output/reels/*.mp4
+output/carousels/*.png
+output/code/*.tsx
+data/state.json
