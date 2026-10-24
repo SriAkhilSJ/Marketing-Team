@@ -70,6 +70,7 @@ async function main() {
   if (flags["trigger"]) process.env.DM_TRIGGER_KEYWORD = flags["trigger"];
   if (flags["offer"]) process.env.MONETIZATION_OFFER = flags["offer"];
   if (flags["offer-url"]) process.env.MONETIZATION_URL = flags["offer-url"];
+  if (flags["tts-voice"]) process.env.TTS_VOICE = flags["tts-voice"];
 
   if (command === "set-env") {
     const state = loadState();
@@ -84,7 +85,8 @@ async function main() {
       ...(flags["style"] ? { preferredVideoStyle: flags["style"] } : {}),
       ...(flags["trigger"] ? { dmTriggerKeyword: flags["trigger"] } : {}),
       ...(flags["offer"] ? { monetizationOffer: flags["offer"] } : {}),
-      ...(flags["offer-url"] ? { monetizationUrl: flags["offer-url"] } : {})
+      ...(flags["offer-url"] ? { monetizationUrl: flags["offer-url"] } : {}),
+      ...(flags["tts-voice"] ? { ttsVoice: flags["tts-voice"] } : {})
     });
     console.log(`✅ Saved environment variables to ${ENV_FILE}`);
     console.log({

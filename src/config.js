@@ -57,6 +57,7 @@ function getEnvSettings() {
     velonaGatewayUrl: process.env.VELONA_GATEWAY_URL || "",
     llmModel: process.env.LLM_MODEL || process.env.MODEL_ID || "",
     useVelonaTts: process.env.USE_VELONA_TTS === "true",
+    ttsVoice: process.env.TTS_VOICE || "en-US-ChristopherNeural",
 
     // Meta / Facebook -> Linked Instagram Env Vars
     fbPageAccessToken: process.env.FB_PAGE_ACCESS_TOKEN || process.env.META_ACCESS_TOKEN || "",
@@ -270,6 +271,7 @@ function writeEnvFileFromSettings(s) {
     `VELONA_GATEWAY_URL=${s.velonaGatewayUrl || ""}`,
     `LLM_MODEL=${s.llmModel || ""}`,
     `USE_VELONA_TTS=${Boolean(s.useVelonaTts)}`,
+    `TTS_VOICE=${s.ttsVoice || "en-US-ChristopherNeural"}`,
     "",
     "# Facebook Page -> Linked Instagram Credentials",
     `FB_PAGE_ACCESS_TOKEN=${s.fbPageAccessToken || ""}`,

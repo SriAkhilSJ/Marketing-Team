@@ -6,6 +6,7 @@ const ffmpegPath = require("@ffmpeg-installer/ffmpeg").path;
 const { callVelonaChat, parseJsonSafely, resolveEnvConfig } = require("./velonaClient");
 const { OUTPUT_DIR } = require("./config");
 const { retrieveContextFromRag, rememberGeneratedReel } = require("./memoryRagEngine");
+const { buildReelVoiceover, isEdgeTtsAvailable } = require("./ttsEngine");
 
 const VIDEO_STYLES = {
   fireship_code: {
@@ -413,8 +414,9 @@ const SceneView: React.FC<{ scene: any; accent: string; secondary: string }> = (
 }
 
 /**
- * Renders a real 9:16 vertical H.264 MP4 video with animated frames + synthesized audio track
- * using @napi-rs/canvas piped into @ffmpeg-installer/ffmpeg.
+ * Renders a real 9:16 vertical H.264 MP4 video with animated frames + real Microsoft Edge
+ * Neural TTS voiceover (via Python edge-tts, free – no API key required).
+ * Falls back to a lavfi sine-wave track if edge-tts is unavailable.
  */
 async function renderMp4FromCodeSpec({ spec, styleCfg, outputPath }) {
   const width = 540;
@@ -426,83 +428,116 @@ async function renderMp4FromCodeSpec({ spec, styleCfg, outputPath }) {
   const totalFrames = framesPerScene * totalScenes; // 240 frames = 10.0s
   const totalDurationSec = totalFrames / fps;
 
+  // ── Step 1: Try Microsoft Edge Neural TTS ──────────────────────────────────
+  const reelId   = path.basename(outputPath, ".mp4");
+  const audioDir = path.dirname(outputPath);
+  let voiceMp3   = null;
+  if (isEdgeTtsAvailable()) {
+    try {
+      voiceMp3 = await buildReelVoiceover({
+        scenes:    spec.scenes,
+        reelId,
+        outputDir: audioDir,
+        voice:     process.env.TTS_VOICE || "en-US-ChristopherNeural"
+      });
+    } catch (e) {
+      console.warn("[TTS] Voiceover generation failed, using synthetic audio:", e.message);
+    }
+  }
+
   const canvas = createCanvas(width, height);
   const ctx = canvas.getContext("2d");
 
+  // ── Step 2: Build FFmpeg args depending on audio source ───────────────────
   return new Promise((resolve, reject) => {
-    const args = [
-      "-y",
-      // Video input: raw RGBA frames from canvas
-      "-f",
-      "rawvideo",
-      "-vcodec",
-      "rawvideo",
-      "-pix_fmt",
-      "rgba",
-      "-s",
-      `${width}x${height}`,
-      "-r",
-      String(fps),
-      "-i",
-      "pipe:0",
-      // Synthesized ambient tech pulse audio stream (Instagram & Facebook require an audio track!)
-      "-f",
-      "lavfi",
-      "-i",
-      `aevalsrc=0.08*sin(2*PI*110*t)+0.05*sin(2*PI*220*t)*(1+0.6*sin(2*PI*2.5*t))+0.03*sin(2*PI*440*t)*exp(-mod(t\\,0.5)*6):s=44100:d=${totalDurationSec}`,
-      "-c:v",
-      "libx264",
-      "-preset",
-      "ultrafast",
-      "-pix_fmt",
-      "yuv420p",
-      "-c:a",
-      "aac",
-      "-b:a",
-      "128k",
-      "-shortest",
-      "-movflags",
-      "+faststart",
-      outputPath
-    ];
+    let args;
+
+    if (voiceMp3) {
+      // ── Real Edge TTS voiceover ───────────────────────────────────────────
+      // Input 0: raw RGBA video frames from canvas (via stdin)
+      // Input 1: pre-rendered MP3 voiceover file from edge-tts
+      // Strategy: pad audio to match video length, loop if shorter.
+      args = [
+        "-y",
+        // Video stream
+        "-f", "rawvideo",
+        "-vcodec", "rawvideo",
+        "-pix_fmt", "rgba",
+        "-s", `${width}x${height}`,
+        "-r", String(fps),
+        "-i", "pipe:0",
+        // Audio stream: the Edge TTS MP3
+        "-i", voiceMp3,
+        // Encode video
+        "-c:v", "libx264",
+        "-preset", "ultrafast",
+        "-pix_fmt", "yuv420p",
+        // Encode audio
+        "-c:a", "aac",
+        "-b:a", "128k",
+        // Trim audio to match video length; if audio is shorter silence-pad it
+        "-af", `apad,atrim=0:${totalDurationSec}`,
+        "-shortest",
+        "-movflags", "+faststart",
+        outputPath
+      ];
+    } else {
+      // ── Fallback: synthetic lavfi ambient tech-pulse audio ────────────────
+      args = [
+        "-y",
+        "-f", "rawvideo",
+        "-vcodec", "rawvideo",
+        "-pix_fmt", "rgba",
+        "-s", `${width}x${height}`,
+        "-r", String(fps),
+        "-i", "pipe:0",
+        // Synthesized ambient tech pulse (Instagram & Facebook require an audio track)
+        "-f", "lavfi",
+        "-i", `aevalsrc=0.08*sin(2*PI*110*t)+0.05*sin(2*PI*220*t)*(1+0.6*sin(2*PI*2.5*t))+0.03*sin(2*PI*440*t)*exp(-mod(t\\,0.5)*6):s=44100:d=${totalDurationSec}`,
+        "-c:v", "libx264",
+        "-preset", "ultrafast",
+        "-pix_fmt", "yuv420p",
+        "-c:a", "aac",
+        "-b:a", "128k",
+        "-shortest",
+        "-movflags", "+faststart",
+        outputPath
+      ];
+    }
 
     const ff = spawn(ffmpegPath, args, { stdio: ["pipe", "ignore", "pipe"] });
     let stderrLog = "";
-    ff.stderr.on("data", (chunk) => {
-      stderrLog += chunk.toString();
-    });
+    ff.stderr.on("data", (chunk) => { stderrLog += chunk.toString(); });
 
     ff.on("error", (err) => reject(err));
     ff.on("close", (code) => {
+      // Clean up temp voice MP3
+      if (voiceMp3 && fs.existsSync(voiceMp3)) {
+        try { fs.unlinkSync(voiceMp3); } catch (_) {}
+      }
       if (code === 0) {
         resolve(outputPath);
       } else {
-        reject(new Error(`FFmpeg exited with code ${code}: ${stderrLog.slice(-300)}`));
+        reject(new Error(`FFmpeg exited with code ${code}: ${stderrLog.slice(-400)}`));
       }
     });
 
+    // ── Step 3: Write canvas frames into ffmpeg stdin ─────────────────────
     let frameIdx = 0;
     function writeNextFrame() {
       while (frameIdx < totalFrames) {
-        const sceneIdx = Math.min(totalScenes - 1, Math.floor(frameIdx / framesPerScene));
-        const sceneFrame = frameIdx % framesPerScene;
+        const sceneIdx      = Math.min(totalScenes - 1, Math.floor(frameIdx / framesPerScene));
+        const sceneFrame    = frameIdx % framesPerScene;
         const sceneProgress = sceneFrame / framesPerScene;
         const globalProgress = frameIdx / totalFrames;
 
         drawCodeVideoFrame({
-          ctx,
-          width,
-          height,
-          spec,
+          ctx, width, height, spec,
           scene: spec.scenes[sceneIdx],
-          sceneIdx,
-          totalScenes,
-          sceneProgress,
-          globalProgress,
-          styleCfg
+          sceneIdx, totalScenes, sceneProgress, globalProgress, styleCfg
         });
 
-        const rawBuf = canvas.data();
+        const rawBuf     = canvas.data();
         const canContinue = ff.stdin.write(rawBuf);
         frameIdx++;
         if (!canContinue) {
