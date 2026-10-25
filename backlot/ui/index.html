@@ -308,7 +308,24 @@
       const chosenIgBiz = (chosenIgPage && chosenIgPage.instagram_business_account) || {};
       const chosenIgConn = (chosenIgPage && chosenIgPage.connected_instagram_account) || {};
       const chosenIgList = (chosenIgPage && chosenIgPage.instagram_accounts && chosenIgPage.instagram_accounts.data && chosenIgPage.instagram_accounts.data[0]) || {};
-      const igAcct = chosenIgBiz.id ? chosenIgBiz : (chosenIgConn.id ? chosenIgConn : chosenIgList);
+      let igAcct = chosenIgBiz.id ? chosenIgBiz : (chosenIgConn.id ? chosenIgConn : chosenIgList);
+
+      // Include any Instagram accounts found directly via /debug_token granular_scopes!
+      for (const [igId, igObj] of directIgMap.entries()) {
+        if (!allIg.some(x => x.ig_user_id === igId)) {
+          allIg.push({
+            ig_user_id: igId,
+            ig_username: igObj.username || '',
+            ig_name: igObj.name || '',
+            ig_followers_count: igObj.followers_count,
+            linked_via_fb_page_id: chosenFb ? chosenFb.id : '',
+            linked_via_fb_page_name: chosenFb ? chosenFb.name : 'Direct Token Scope',
+          });
+        }
+        if (!igAcct || !igAcct.id) {
+          igAcct = igObj;
+        }
+      }
 
       const discovered = {
         discovered: true,
@@ -318,11 +335,13 @@
         ig_user_id: igAcct.id || '',
         ig_username: igAcct.username || '',
         ig_followers_count: igAcct.followers_count,
-        ig_linked_fb_page_id: (chosenIgPage && chosenIgPage.id) || '',
-        ig_linked_fb_page_name: (chosenIgPage && chosenIgPage.name) || '',
+        ig_linked_fb_page_id: (chosenIgPage && chosenIgPage.id) || (chosenFb && chosenFb.id) || '',
+        ig_linked_fb_page_name: (chosenIgPage && chosenIgPage.name) || (chosenFb && chosenFb.name) || '',
         ig_access_token: (chosenIgPage && chosenIgPage.access_token) || fbToken,
         all_pages: allPages,
         all_instagram_accounts: allIg,
+        token_scopes: tokenScopes,
+        granular_scopes: granularScopes,
       };
       await fetch('/api/studio/save-discovered', {
         method: 'POST',
