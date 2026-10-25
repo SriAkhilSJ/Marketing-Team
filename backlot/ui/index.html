@@ -373,10 +373,18 @@
     }
 
     const animePage = pages.find(p => (p.name || '').toLowerCase().replace(/\s+/g, '').includes('anime'));
-    if (animePage) {
+    if (preferredFbPageId) {
+      const matched = pages.find(p => String(p.id) === String(preferredFbPageId));
+      if (matched) chosenFb = matched;
+    } else if (animePage) {
       chosenFb = animePage;
-    } else if (!preferredFbPageId && chosenIgPage) {
+    } else if (chosenIgPage) {
       chosenFb = chosenIgPage;
+    }
+
+    // Always prefer the Instagram account linked to the selected Facebook Page (e.g. AnimeEdits -> @naruto.uzumaki8067)!
+    if (chosenFb && (chosenFb.instagram_business_account || chosenFb.connected_instagram_account)) {
+      chosenIgPage = chosenFb;
     }
 
     const chosenIgBiz = (chosenIgPage && chosenIgPage.instagram_business_account) || {};
@@ -455,22 +463,40 @@
 
       const sel = document.getElementById('fbPageSelect');
       const pages = (disc && disc.all_pages) || [];
-      sel.innerHTML = '<option value="">Auto-Selected Page</option>';
+      sel.innerHTML = '';
       for (const p of pages) {
         const opt = document.createElement('option');
         opt.value = p.fb_page_id;
-        opt.textContent = `${p.fb_page_name} (${p.fb_page_id})${p.has_linked_instagram ? ' [IG Linked: @' + p.ig_username + ']' : ''}`;
+        opt.textContent = `${p.fb_page_name} (${p.fb_page_id})${p.has_linked_instagram ? ' [IG: @' + p.ig_username + ']' : ''}`;
         if (p.fb_page_id === (disc.fb_page_id || cfg.fb_page_id)) opt.selected = true;
         sel.appendChild(opt);
       }
       const igDisp = document.getElementById('igAccountDisplay');
-      const igUser = disc.ig_username || cfg.ig_username;
-      const igId = disc.ig_user_id || cfg.ig_user_id;
+      const activePageObj = pages.find(p => p.fb_page_id === sel.value) || {};
+      const igUser = activePageObj.ig_username || disc.ig_username || cfg.ig_username;
+      const igId = activePageObj.ig_user_id || disc.ig_user_id || cfg.ig_user_id;
       if (igUser || igId) {
-        igDisp.value = igUser ? `@${igUser} (${igId}) [via ${disc.ig_linked_fb_page_name || 'FB Page'}]` : igId;
+        igDisp.value = igUser ? `@${igUser} (${igId})` : igId;
       } else {
-        igDisp.value = disc.reason ? `Check permissions: ${disc.reason}` : 'Waiting for token discovery...';
+        igDisp.value = disc.reason ? `Check permissions: ${disc.reason}` : 'No IG linked to this Page';
       }
+
+      sel.onchange = () => {
+        const chosenP = pages.find(p => p.fb_page_id === sel.value);
+        if (chosenP) {
+          disc.fb_page_id = chosenP.fb_page_id;
+          disc.fb_page_name = chosenP.fb_page_name;
+          disc.fb_page_access_token = chosenP.fb_page_access_token;
+          if (chosenP.ig_user_id) {
+            disc.ig_user_id = chosenP.ig_user_id;
+            disc.ig_username = chosenP.ig_username;
+            disc.ig_access_token = chosenP.fb_page_access_token;
+            igDisp.value = `@${chosenP.ig_username} (${chosenP.ig_user_id})`;
+          } else {
+            igDisp.value = 'No IG linked to this Page';
+          }
+        }
+      };
 
       if (disc && disc.discovered) {
         document.getElementById('jobResultBox').textContent =
