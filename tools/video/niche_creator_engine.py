@@ -421,6 +421,7 @@ def list_creator_queue() -> list[dict[str, Any]]:
             else:
                 approval_status = "awaiting_approval"
 
+        mtime_v = int(mp4.stat().st_mtime)
         items.append({
             "project_id": pdir.name,
             "title": project_meta.get("title") or script_data.get("title") or pdir.name,
@@ -429,8 +430,8 @@ def list_creator_queue() -> list[dict[str, Any]]:
             "approval_status": approval_status,
             "created_at": project_meta.get("created_at"),
             "duration_seconds": script_data.get("total_duration_seconds") or 12.0,
-            "media_url": f"/media/{pdir.name}/renders/final.mp4",
-            "poster_url": f"/thumb/{pdir.name}/snapshots/sc1.jpg?w=640",
+            "media_url": f"/media/{pdir.name}/renders/final.mp4?v={mtime_v}",
+            "poster_url": f"/thumb/{pdir.name}/snapshots/sc1.jpg?w=640&v={mtime_v}",
             "board_url": f"/p/{pdir.name}",
             "caption": script_data.get("caption") or "",
             "hashtags": script_data.get("hashtags") or [],

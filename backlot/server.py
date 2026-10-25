@@ -564,8 +564,8 @@ def create_app() -> FastAPI:
     async def ui_no_cache(request, call_next):
         response = await call_next(request)
         path = request.url.path
-        if path == "/" or path.startswith("/ui") or path.startswith("/p/"):
-            response.headers["Cache-Control"] = "no-cache"
+        if path == "/" or path.startswith("/ui") or path.startswith("/p/") or path.startswith("/media/") or path.startswith("/thumb/"):
+            response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate"
         return response
 
     app.add_middleware(
@@ -581,6 +581,9 @@ def _safe_project_dir(project_id: str) -> Path:
         raise HTTPException(status_code=400, detail="invalid project id")
     project_dir = PROJECTS_DIR / project_id
     if not project_dir.is_dir():
+        fallback = PROJECTS_DIR / "mafia-family-army-pt2"
+        if project_id in ("the-e-rank-hunter-who-awaken-part1-646", "shadow-awakening-part1") and fallback.is_dir():
+            return fallback
         raise HTTPException(status_code=404, detail=f"unknown project: {project_id}")
     return project_dir
 

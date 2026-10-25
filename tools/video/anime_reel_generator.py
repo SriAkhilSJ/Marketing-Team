@@ -171,7 +171,40 @@ def generate_anime_script_via_llm(
             f"Follow for Part {next_part} & watch the full series via the link in the first comment."
         )
         hashtags = ["anime", "animeedits", "aianime", "mafiaboss", "animereels", f"part{part_number}"]
-    elif "flower" in low or "playground" in low or "teacher" in low or "school" in low:
+    elif "army" in low or "school" in low or "suv" in low:
+        beats = [
+            {
+                "beat_type": "HOOK",
+                "headline": f"PART {part_number}/{total_parts}: 50 BLACK SUVS LOCKED DOWN THE SCHOOL",
+                "subtext": "NEVER THREATEN THE MAFIA BOSS'S LITTLE PRINCESS",
+                "narration": f"Part {part_number} of {total_parts}. When a rival gang dared to approach his daughter's school gate, the city ground to a halt.",
+            },
+            {
+                "beat_type": "TENSION",
+                "headline": "THE CLASSROOM WINDOW TURNED DARK",
+                "subtext": "SYNDICATE ENFORCERS SURROUNDED THE ENTIRE BLOCK",
+                "narration": "Fifty armored black SUVs sealed every exit while his little girl calmly finished her crayon drawing inside.",
+            },
+            {
+                "beat_type": "TWIST",
+                "headline": "SAFER IN PRISON THAN FACING HIM",
+                "subtext": "THE BOSS STEPPED OUT HOLDING HER PINK BACKPACK",
+                "narration": "The Boss stepped into the rain holding her pink backpack, and the rival leader realized prison was safer than facing him.",
+            },
+            {
+                "beat_type": "CLIFFHANGER",
+                "headline": f"FOLLOW FOR PART {next_part} · COMMENT {keyword}",
+                "subtext": "WATCH THE FULL SERIES ON YOUTUBE IN FIRST COMMENT",
+                "narration": f"Time to show them what family is really about. Follow for Part {next_part} and comment {keyword} for the full video link!",
+            },
+        ]
+        caption = (
+            f"🎬 [{short_title} — Part {part_number}/{total_parts}] "
+            f"They're safer in prison than facing an overprotective Mafia Dad! "
+            f"Follow for Part {next_part} & watch the full series via the link in the first comment."
+        )
+        hashtags = ["anime", "animeedits", "aianime", "mafiaboss", "animereels", f"part{part_number}"]
+    elif "flower" in low or "playground" in low or "teacher" in low:
         beats = [
             {
                 "beat_type": "HOOK",
@@ -303,20 +336,51 @@ def _ensure_audio_track(narration_text: str, out_audio: Path, target_duration: f
     return target_duration
 
 
-def _wrap_text(text: str, max_chars: int = 26) -> list[str]:
+def _wrap_text_px(draw: ImageDraw.ImageDraw, text: str, font: Any, max_width: int, max_lines: int = 3) -> list[str]:
     words = text.split()
     lines: list[str] = []
     cur = ""
     for w in words:
-        if len(cur) + len(w) + (1 if cur else 0) <= max_chars:
-            cur = f"{cur} {w}".strip()
+        cand = f"{cur} {w}".strip()
+        bbox = draw.textbbox((0, 0), cand, font=font)
+        if (bbox[2] - bbox[0]) <= max_width or not cur:
+            cur = cand
         else:
-            if cur:
-                lines.append(cur)
+            lines.append(cur)
             cur = w
     if cur:
         lines.append(cur)
-    return lines[:3]
+    return lines[:max_lines]
+
+
+def _select_scene_artworks(topic: str) -> list[Path]:
+    scene_dir = REPO_ROOT / "assets" / "anime_scenes"
+    low = (topic or "").lower()
+    if "cat" in low or "lester" in low:
+        names = [
+            "lester_and_mr_cat.jpg",
+            "mr_cat_demon_awakening.jpg",
+            "mafia_boss_glowing_aura_entrance.jpg",
+            "mafia_dad_carry_daughter.jpg",
+        ]
+    elif "flower" in low or "playground" in low or "teacher" in low:
+        names = [
+            "mafia_daughter_playground.jpg",
+            "lester_tactical_backup.jpg",
+            "mafia_dad_blushing_teacher.jpg",
+            "mafia_boss_dad_suvs.jpg",
+        ]
+    else:
+        names = [
+            "mafia_boss_dad_suvs.jpg",
+            "mafia_daughter_classroom_threat.jpg",
+            "mafia_syndicate_standoff.jpg",
+            "mafia_boss_glowing_aura_entrance.jpg",
+        ]
+    paths = [scene_dir / n for n in names if (scene_dir / n).is_file()]
+    if not paths and scene_dir.is_dir():
+        paths = sorted(scene_dir.glob("*.jpg"))[:4]
+    return paths
 
 
 def render_anime_reel_project(
@@ -375,118 +439,146 @@ def render_anime_reel_project(
     total_frames = int(round(duration * fps))
     frames_per_beat = max(1, total_frames // 4)
 
-    font_badge = _load_font(34, bold=True)
-    font_headline = _load_font(62, bold=True)
-    font_sub = _load_font(32, bold=False)
-    font_caption = _load_font(42, bold=True)
+    font_badge = _load_font(30, bold=True)
+    font_headline = _load_font(48, bold=True)
+    font_sub = _load_font(28, bold=False)
+    font_caption = _load_font(38, bold=True)
 
-    # Palettes per beat (Crimson Hook -> Abyss Blue Tension -> Violet Awakening Twist -> Gold Cliffhanger)
     palettes = [
-        ((10, 8, 18), (255, 46, 99), (0, 245, 212)),
-        ((6, 12, 28), (0, 180, 255), (120, 90, 255)),
-        ((16, 6, 30), (199, 75, 255), (255, 215, 0)),
-        ((18, 8, 12), (255, 184, 0), (255, 46, 99)),
+        ((10, 8, 18), (255, 255, 255), (255, 64, 112)),
+        ((6, 12, 28), (255, 255, 255), (56, 189, 248)),
+        ((16, 6, 30), (255, 255, 255), (217, 70, 239)),
+        ((18, 8, 12), (255, 255, 255), (250, 204, 21)),
     ]
 
     W, H = 1080, 1920
+    scene_paths = _select_scene_artworks(topic)
+    overscan_w, overscan_h = int(W * 1.18), int(H * 1.18)
+    loaded_scenes: list[Image.Image] = []
+    for b_i in range(4):
+        if scene_paths:
+            sp = scene_paths[b_i % len(scene_paths)]
+            with Image.open(sp) as raw_im:
+                loaded_scenes.append(raw_im.convert("RGB").resize((overscan_w, overscan_h), Image.Resampling.LANCZOS))
+
+    # Prebuild a smooth top & bottom dark gradient vignette mask keeping y=90..1500 100% crystal clear
+    vignette_rgba = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+    v_draw = ImageDraw.Draw(vignette_rgba)
+    for y in range(140):
+        alpha = int(130 * (1.0 - (y / 140.0)) ** 1.4)
+        v_draw.line([(0, y), (W, y)], fill=(6, 6, 10, alpha))
+    for y in range(1460, H):
+        prog = (y - 1460) / float(H - 1460)
+        alpha = int(230 * (prog ** 1.15))
+        v_draw.line([(0, y), (W, y)], fill=(6, 6, 10, min(235, alpha)))
+
     for f_idx in range(total_frames):
         beat_idx = min(3, f_idx // frames_per_beat)
         beat = beats[beat_idx]
-        local_t = (f_idx % frames_per_beat) / max(1, frames_per_beat)
+        beat_frame = f_idx % frames_per_beat
+        local_t = beat_frame / max(1, frames_per_beat)
         bg_col, accent_col, sec_col = palettes[beat_idx]
 
-        img = Image.new("RGB", (W, H), bg_col)
-        draw = ImageDraw.Draw(img)
+        if loaded_scenes:
+            base_art = loaded_scenes[beat_idx]
+            # Dynamic Ken Burns zoom + pan + 4-frame anime impact camera shake on beat transitions
+            zoom = 1.0 + (0.10 * local_t if beat_idx % 2 == 0 else 0.10 * (1.0 - local_t))
+            crop_w = int(W / zoom)
+            crop_h = int(H / zoom)
+            max_dx = max(1, overscan_w - crop_w)
+            max_dy = max(1, overscan_h - crop_h)
+            pan_x = int(max_dx * (0.25 + 0.5 * local_t if beat_idx % 2 == 0 else 0.75 - 0.5 * local_t))
+            pan_y = int(max_dy * (0.18 + 0.35 * local_t))
+            if beat_frame < 4:
+                shake = (4 - beat_frame) * 7
+                pan_x = max(0, min(max_dx, pan_x + (shake if beat_frame % 2 == 0 else -shake)))
+                pan_y = max(0, min(max_dy, pan_y + (-shake if beat_frame % 2 == 0 else shake)))
+            cropped = base_art.crop((pan_x, pan_y, pan_x + crop_w, pan_y + crop_h))
+            img_rgba = cropped.resize((W, H), Image.Resampling.BILINEAR).convert("RGBA")
+            img_rgba = Image.alpha_composite(img_rgba, vignette_rgba)
+        else:
+            img_rgba = Image.new("RGBA", (W, H), (*bg_col, 255))
 
-        # 1. Manga speed-lines / radial energy rays from center
-        cx, cy = W // 2, int(H * 0.42)
-        for ray in range(0, 360, 12):
-            ang = math.radians(ray + f_idx * 1.8)
-            r_inner = 180 + int(40 * math.sin(local_t * math.pi * 2 + ray))
-            r_outer = 980
-            x1 = cx + int(r_inner * math.cos(ang))
-            y1 = cy + int(r_inner * math.sin(ang))
-            x2 = cx + int(r_outer * math.cos(ang))
-            y2 = cy + int(r_outer * math.sin(ang))
-            col = accent_col if (ray // 12) % 2 == 0 else sec_col
-            dim_col = (col[0] // 4, col[1] // 4, col[2] // 4)
-            draw.line([(x1, y1), (x2, y2)], fill=dim_col, width=3)
+        hud_rgba = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+        draw = ImageDraw.Draw(hud_rgba)
 
-        # 2. Concentric Anime Awakening Aura Rings + Silhouette Emblem
-        for ring in range(4):
-            rad = int(130 + ring * 58 + (local_t * 45))
-            ring_col = accent_col if ring % 2 == 0 else sec_col
-            draw.ellipse(
-                [cx - rad, cy - rad, cx + rad, cy + rad],
-                outline=ring_col,
-                width=4 if ring == 0 else 2,
-            )
+        # Subtle floating glowing anime embers
+        for p in range(12):
+            px = int((p * 173 + f_idx * (3 + (p % 3))) % (W - 140)) + 70
+            py = int((H * 0.82 - ((p * 211 + f_idx * (7 + (p % 5))) % int(H * 0.72))))
+            pr = 2 + (p % 4)
+            draw.ellipse([px - pr, py - pr, px + pr, py + pr], fill=(*sec_col, 200))
 
-        # Glowing Anime Eyes / Awakening Crest inside the core
-        eye_y = cy - 12
-        glow_pulse = int(8 * math.sin(f_idx * 0.4))
-        draw.polygon(
-            [(cx - 95, eye_y), (cx - 35, eye_y - 22 - glow_pulse), (cx - 25, eye_y + 10)],
-            fill=accent_col,
-        )
-        draw.polygon(
-            [(cx + 95, eye_y), (cx + 35, eye_y - 22 - glow_pulse), (cx + 25, eye_y + 10)],
-            fill=accent_col,
-        )
+        # Slim Top Episodic Pill Badge (y=36..88 — above all character heads!)
+        badge_text = f"EPISODE PART {part_number} OF {total_parts}  ·  {beat.get('beat_type', 'SCENE')}"
+        b_bbox = draw.textbbox((0, 0), badge_text, font=font_badge)
+        b_w = b_bbox[2] - b_bbox[0]
+        pill_pad_x = 28
+        pill_x0 = max(60, (W - (b_w + pill_pad_x * 2)) // 2)
+        pill_x1 = min(W - 60, pill_x0 + b_w + pill_pad_x * 2)
+        draw.rounded_rectangle([pill_x0, 36, pill_x1, 88], radius=999, fill=(8, 8, 12, 165), outline=(*sec_col, 230), width=2)
+        draw.text(((W - b_w) // 2, 46), badge_text, fill=(255, 255, 255, 255), font=font_badge)
 
-        # 3. Floating Ember / Mana Particles
-        for p in range(22):
-            px = int((p * 173 + f_idx * (4 + (p % 3))) % (W - 120)) + 60
-            py = int((H * 0.85 - ((p * 211 + f_idx * (9 + (p % 5))) % int(H * 0.75))))
-            pr = 3 + (p % 5)
-            p_col = accent_col if p % 2 == 0 else sec_col
-            draw.ellipse([px - pr, py - pr, px + pr, py + pr], fill=p_col)
+        # Unified Bottom Cinema HUD (y=1515..1765 — below both the Little Daughter's face and Mr. Cat's face!)
+        headline_raw = str(beat.get("headline", "")).upper()
+        sub_raw = str(beat.get("subtext", "")).upper()
+        headline_lines = _wrap_text_px(draw, headline_raw, font_headline, max_width=900, max_lines=2)
+        sub_lines = _wrap_text_px(draw, sub_raw, font_sub, max_width=900, max_lines=1)
 
-        # 4. Top Episodic Badge Bar
-        draw.rounded_rectangle([70, 95, W - 70, 175], radius=18, fill=(22, 22, 34), outline=accent_col, width=3)
-        badge_text = f"⚡ EPISODE PART {part_number} OF {total_parts}  •  {beat.get('beat_type', 'SCENE')}"
-        draw.text((105, 118), badge_text, fill=(255, 255, 255), font=font_badge)
-
-        # 5. Manga Impact Headline Box (Middle-Lower)
-        headline_lines = _wrap_text(str(beat.get("headline", "")).upper(), max_chars=20)
-        box_top = 1030
-        box_bottom = box_top + 90 + len(headline_lines) * 76
+        box_top = 1515
+        box_bottom = 1768
         draw.rounded_rectangle(
-            [65, box_top, W - 65, box_bottom],
-            radius=22,
-            fill=(14, 14, 24),
-            outline=accent_col,
-            width=4,
+            [48, box_top, W - 48, box_bottom],
+            radius=20,
+            fill=(8, 8, 14, 155),
+            outline=(*sec_col, 210),
+            width=2,
         )
-        y_cursor = box_top + 28
+        y_cursor = box_top + 16
         for line in headline_lines:
-            draw.text((100, y_cursor), line, fill=accent_col, font=font_headline)
-            y_cursor += 74
+            lb = draw.textbbox((0, 0), line, font=font_headline)
+            lw = lb[2] - lb[0]
+            draw.text(((W - lw) // 2, y_cursor), line, fill=(255, 255, 255, 255), font=font_headline)
+            y_cursor += 50
+        for sline in sub_lines:
+            sb = draw.textbbox((0, 0), sline, font=font_sub)
+            sw = sb[2] - sb[0]
+            draw.text(((W - sw) // 2, y_cursor + 2), sline, fill=(*sec_col, 255), font=font_sub)
+            y_cursor += 34
 
-        sub_line = str(beat.get("subtext", ""))[:46]
-        draw.text((100, box_bottom - 48), sub_line, fill=(210, 215, 230), font=font_sub)
-
-        # 6. Word-Synced Karaoke Subtitle Strip (Bottom Safe Area)
+        # Word-Synced Karaoke Row inside the Bottom Cinema HUD (y=1698)
         narration = str(beat.get("narration", ""))
         words = narration.split()
         if words:
             active_word_idx = min(len(words) - 1, int(local_t * len(words)))
-            window_start = max(0, (active_word_idx // 5) * 5)
-            window_words = words[window_start : window_start + 5]
-            sub_y = 1520
-            draw.rounded_rectangle(
-                [70, sub_y - 25, W - 70, sub_y + 95],
-                radius=20,
-                fill=(8, 8, 14),
-                outline=(80, 85, 110),
-                width=2,
-            )
-            x_cursor = 105
+            window_size = 4
+            window_start = max(0, (active_word_idx // window_size) * window_size)
+            window_words = words[window_start : window_start + window_size]
+
+            word_widths = []
+            for w_str in window_words:
+                wb = draw.textbbox((0, 0), w_str, font=font_caption)
+                word_widths.append(wb[2] - wb[0])
+            gap = 18
+            total_row_w = sum(word_widths) + gap * max(0, len(window_words) - 1)
+            sub_y = 1696
+            x_cursor = max(76, (W - total_row_w) // 2)
             for w_i, word in enumerate(window_words):
+                ww = word_widths[w_i]
                 is_active = (window_start + w_i) == active_word_idx
-                w_col = (255, 230, 0) if is_active else (245, 245, 250)
-                draw.text((x_cursor, sub_y + 12), word, fill=w_col, font=font_caption)
-                x_cursor += max(75, len(word) * 28 + 26)
+                if is_active:
+                    draw.rounded_rectangle(
+                        [x_cursor - 9, sub_y - 4, x_cursor + ww + 9, sub_y + 48],
+                        radius=9,
+                        fill=(*sec_col, 255),
+                    )
+                    draw.text((x_cursor, sub_y + 4), word, fill=(0, 0, 0, 255), font=font_caption)
+                else:
+                    draw.text((x_cursor, sub_y + 4), word, fill=(240, 240, 248, 255), font=font_caption)
+                x_cursor += ww + gap
+
+        img = Image.alpha_composite(img_rgba, hud_rgba).convert("RGB")
+        draw = ImageDraw.Draw(img)
 
         # 7. Progress Bar at very bottom
         prog_w = int((W - 140) * ((f_idx + 1) / total_frames))
