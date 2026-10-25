@@ -244,179 +244,182 @@
 
   async function discoverViaBrowserGraphApi(fbToken, preferredFbPageId) {
     if (!fbToken) return null;
+    const debugLog = {};
+    const pagesMap = new Map();
+    const directIgMap = new Map();
+    let tokenScopes = [];
+    let granularScopes = [];
+    const pageFields = 'id,name,access_token,instagram_business_account{id,username,name}';
+
+    // 1. Run /debug_token FIRST to get every Page ID & Instagram Account ID in granular_scopes
     try {
-      const fields = [
-        'id',
-        'name',
-        'access_token',
-        'instagram_business_account{id,username,name,followers_count}',
-        'connected_instagram_account{id,username,name,followers_count}',
-        'instagram_accounts{id,username}',
-      ].join(',');
-      const url = `https://graph.facebook.com/v25.0/me/accounts?fields=${encodeURIComponent(fields)}&limit=50&access_token=${encodeURIComponent(fbToken)}`;
+      const dbgUrl = `https://graph.facebook.com/v25.0/debug_token?input_token=${encodeURIComponent(fbToken)}&access_token=${encodeURIComponent(fbToken)}`;
+      const dbgResp = await fetch(dbgUrl);
+      const dbgJson = await dbgResp.json();
+      debugLog.debug_token = dbgJson;
+      const dbgData = dbgJson.data || {};
+      tokenScopes = dbgData.scopes || [];
+      granularScopes = dbgData.granular_scopes || [];
+
+      const pageTargetIds = new Set();
+      const igTargetIds = new Set();
+      for (const gs of granularScopes) {
+        const scope = gs.scope || '';
+        for (const tid of (gs.target_ids || [])) {
+          if (scope.startsWith('pages_')) pageTargetIds.add(String(tid));
+          if (scope.startsWith('instagram_')) igTargetIds.add(String(tid));
+        }
+      }
+
+      for (const pid of pageTargetIds) {
+        try {
+          const pResp = await fetch(`https://graph.facebook.com/v25.0/${pid}?fields=${encodeURIComponent(pageFields)}&access_token=${encodeURIComponent(fbToken)}`);
+          const pJson = await pResp.json();
+          if (pJson && pJson.id) pagesMap.set(String(pJson.id), pJson);
+        } catch (e) {}
+      }
+
+      for (const igId of igTargetIds) {
+        try {
+          const igResp = await fetch(`https://graph.facebook.com/v25.0/${igId}?fields=id,username,name&access_token=${encodeURIComponent(fbToken)}`);
+          const igJson = await igResp.json();
+          if (igJson && igJson.id) {
+            directIgMap.set(String(igJson.id), igJson);
+          } else {
+            directIgMap.set(String(igId), { id: String(igId), username: '' });
+          }
+        } catch (e) {
+          directIgMap.set(String(igId), { id: String(igId), username: '' });
+        }
+      }
+    } catch (e) {
+      debugLog.debug_token_error = e.message;
+    }
+
+    // 2. Query /me/accounts with safe v25.0 fields
+    try {
+      const url = `https://graph.facebook.com/v25.0/me/accounts?fields=${encodeURIComponent(pageFields)}&limit=50&access_token=${encodeURIComponent(fbToken)}`;
       const r = await fetch(url);
       const payload = await r.json();
-      if (payload.error) {
-        return { discovered: false, reason: payload.error.message || JSON.stringify(payload.error) };
-      }
-      const pagesMap = new Map();
+      debugLog.me_accounts_count = (payload.data || []).length;
+      if (payload.error) debugLog.me_accounts_error = payload.error;
       for (const p of (payload.data || [])) {
         pagesMap.set(String(p.id), p);
       }
-
-      const directIgMap = new Map();
-      let tokenScopes = [];
-      let granularScopes = [];
-      try {
-        const dbgUrl = `https://graph.facebook.com/v25.0/debug_token?input_token=${encodeURIComponent(fbToken)}&access_token=${encodeURIComponent(fbToken)}`;
-        const dbgResp = await fetch(dbgUrl);
-        const dbgJson = await dbgResp.json();
-        const dbgData = dbgJson.data || {};
-        tokenScopes = dbgData.scopes || [];
-        granularScopes = dbgData.granular_scopes || [];
-
-        const pageTargetIds = new Set();
-        const igTargetIds = new Set();
-        for (const gs of granularScopes) {
-          const scope = gs.scope || '';
-          for (const tid of (gs.target_ids || [])) {
-            if (scope.startsWith('pages_')) pageTargetIds.add(String(tid));
-            if (scope.startsWith('instagram_')) igTargetIds.add(String(tid));
-          }
-        }
-
-        for (const pid of pageTargetIds) {
-          if (!pagesMap.has(pid)) {
-            try {
-              const pResp = await fetch(`https://graph.facebook.com/v25.0/${pid}?fields=${encodeURIComponent(fields)}&access_token=${encodeURIComponent(fbToken)}`);
-              const pJson = await pResp.json();
-              if (pJson && pJson.id) pagesMap.set(String(pJson.id), pJson);
-            } catch (e) {}
-          }
-        }
-
-        for (const igId of igTargetIds) {
-          try {
-            const igResp = await fetch(`https://graph.facebook.com/v25.0/${igId}?fields=id,username,name,followers_count&access_token=${encodeURIComponent(fbToken)}`);
-            const igJson = await igResp.json();
-            if (igJson && igJson.id) {
-              directIgMap.set(String(igJson.id), igJson);
-            } else {
-              directIgMap.set(String(igId), { id: String(igId), username: '' });
-            }
-          } catch (e) {
-            directIgMap.set(String(igId), { id: String(igId), username: '' });
-          }
-        }
-      } catch (e) {}
-
-      try {
-        const bizUrl = `https://graph.facebook.com/v25.0/me/businesses?fields=${encodeURIComponent('id,name,owned_pages{' + fields + '},client_pages{' + fields + '}')}&access_token=${encodeURIComponent(fbToken)}`;
-        const bizResp = await fetch(bizUrl);
-        const bizJson = await bizResp.json();
-        for (const b of (bizJson.data || [])) {
-          for (const p of ((b.owned_pages && b.owned_pages.data) || [])) {
-            if (!pagesMap.has(String(p.id))) pagesMap.set(String(p.id), p);
-          }
-          for (const p of ((b.client_pages && b.client_pages.data) || [])) {
-            if (!pagesMap.has(String(p.id))) pagesMap.set(String(p.id), p);
-          }
-        }
-      } catch (e) {}
-
-      const pages = Array.from(pagesMap.values());
-      if (!pages.length && !directIgMap.size) {
-        return { discovered: false, reason: 'No Facebook Pages returned on this token. Make sure pages_show_list and business_management are granted.' };
-      }
-      const allPages = [];
-      const allIg = [];
-      let chosenFb = pages[0] || { id: '', name: '' };
-      let chosenIgPage = null;
-
-      for (const p of pages) {
-        const igBiz = p.instagram_business_account || {};
-        const igConn = p.connected_instagram_account || {};
-        const igListFirst = (p.instagram_accounts && p.instagram_accounts.data && p.instagram_accounts.data[0]) || {};
-        const ig = igBiz.id ? igBiz : (igConn.id ? igConn : igListFirst);
-
-        allPages.push({
-          fb_page_id: p.id,
-          fb_page_name: p.name,
-          fb_page_access_token: p.access_token || fbToken,
-          has_linked_instagram: Boolean(ig.id),
-          ig_user_id: ig.id || '',
-          ig_username: ig.username || '',
-        });
-        if (ig.id) {
-          allIg.push({
-            ig_user_id: ig.id,
-            ig_username: ig.username || '',
-            ig_name: ig.name || '',
-            ig_followers_count: ig.followers_count,
-            linked_via_fb_page_id: p.id,
-            linked_via_fb_page_name: p.name,
-          });
-          if (!chosenIgPage) chosenIgPage = p;
-        }
-        if (preferredFbPageId && p.id === preferredFbPageId) {
-          chosenFb = p;
-        }
-      }
-      if (!preferredFbPageId) {
-        const animePage = pages.find(p => (p.name || '').toLowerCase().replace(/\s+/g, '').includes('animeedits'));
-        if (animePage) {
-          chosenFb = animePage;
-        } else if (chosenIgPage) {
-          chosenFb = chosenIgPage;
-        }
-      }
-      const chosenIgBiz = (chosenIgPage && chosenIgPage.instagram_business_account) || {};
-      const chosenIgConn = (chosenIgPage && chosenIgPage.connected_instagram_account) || {};
-      const chosenIgList = (chosenIgPage && chosenIgPage.instagram_accounts && chosenIgPage.instagram_accounts.data && chosenIgPage.instagram_accounts.data[0]) || {};
-      let igAcct = chosenIgBiz.id ? chosenIgBiz : (chosenIgConn.id ? chosenIgConn : chosenIgList);
-
-      // Include any Instagram accounts found directly via /debug_token granular_scopes!
-      for (const [igId, igObj] of directIgMap.entries()) {
-        if (!allIg.some(x => x.ig_user_id === igId)) {
-          allIg.push({
-            ig_user_id: igId,
-            ig_username: igObj.username || '',
-            ig_name: igObj.name || '',
-            ig_followers_count: igObj.followers_count,
-            linked_via_fb_page_id: chosenFb ? chosenFb.id : '',
-            linked_via_fb_page_name: chosenFb ? chosenFb.name : 'Direct Token Scope',
-          });
-        }
-        if (!igAcct || !igAcct.id) {
-          igAcct = igObj;
-        }
-      }
-
-      const discovered = {
-        discovered: true,
-        fb_page_id: chosenFb.id,
-        fb_page_name: chosenFb.name,
-        fb_page_access_token: chosenFb.access_token || fbToken,
-        ig_user_id: igAcct.id || '',
-        ig_username: igAcct.username || '',
-        ig_followers_count: igAcct.followers_count,
-        ig_linked_fb_page_id: (chosenIgPage && chosenIgPage.id) || (chosenFb && chosenFb.id) || '',
-        ig_linked_fb_page_name: (chosenIgPage && chosenIgPage.name) || (chosenFb && chosenFb.name) || '',
-        ig_access_token: (chosenIgPage && chosenIgPage.access_token) || fbToken,
-        all_pages: allPages,
-        all_instagram_accounts: allIg,
-        token_scopes: tokenScopes,
-        granular_scopes: granularScopes,
-      };
-      await fetch('/api/studio/save-discovered', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify(discovered),
-      });
-      return discovered;
-    } catch (err) {
-      return { discovered: false, reason: err.message };
+    } catch (e) {
+      debugLog.me_accounts_exception = e.message;
     }
+
+    // 3. Also check /me/businesses owned_pages & client_pages
+    try {
+      const bizUrl = `https://graph.facebook.com/v25.0/me/businesses?fields=${encodeURIComponent('id,name,owned_pages{' + pageFields + '},client_pages{' + pageFields + '}')}&access_token=${encodeURIComponent(fbToken)}`;
+      const bizResp = await fetch(bizUrl);
+      const bizJson = await bizResp.json();
+      for (const b of (bizJson.data || [])) {
+        for (const p of ((b.owned_pages && b.owned_pages.data) || [])) {
+          if (!pagesMap.has(String(p.id))) pagesMap.set(String(p.id), p);
+        }
+        for (const p of ((b.client_pages && b.client_pages.data) || [])) {
+          if (!pagesMap.has(String(p.id))) pagesMap.set(String(p.id), p);
+        }
+      }
+    } catch (e) {}
+
+    // 4. For every discovered Page, also check its page-token /instagram_accounts or /connected_instagram_account if instagram_business_account wasn't set
+    for (const [pid, p] of pagesMap.entries()) {
+      if (!p.instagram_business_account) {
+        const pTok = p.access_token || fbToken;
+        try {
+          const subResp = await fetch(`https://graph.facebook.com/v25.0/${pid}?fields=instagram_business_account{id,username,name},connected_instagram_account{id,username,name}&access_token=${encodeURIComponent(pTok)}`);
+          const subJson = await subResp.json();
+          if (subJson.instagram_business_account) p.instagram_business_account = subJson.instagram_business_account;
+          if (subJson.connected_instagram_account) p.connected_instagram_account = subJson.connected_instagram_account;
+        } catch (e) {}
+      }
+    }
+
+    const pages = Array.from(pagesMap.values());
+    const allPages = [];
+    const allIg = [];
+    let chosenFb = pages[0] || { id: '', name: '' };
+    let chosenIgPage = null;
+
+    for (const p of pages) {
+      const igBiz = p.instagram_business_account || {};
+      const igConn = p.connected_instagram_account || {};
+      const ig = igBiz.id ? igBiz : igConn;
+
+      allPages.push({
+        fb_page_id: p.id,
+        fb_page_name: p.name,
+        fb_page_access_token: p.access_token || fbToken,
+        has_linked_instagram: Boolean(ig && ig.id),
+        ig_user_id: (ig && ig.id) || '',
+        ig_username: (ig && ig.username) || '',
+      });
+      if (ig && ig.id) {
+        allIg.push({
+          ig_user_id: ig.id,
+          ig_username: ig.username || '',
+          ig_name: ig.name || '',
+          linked_via_fb_page_id: p.id,
+          linked_via_fb_page_name: p.name,
+        });
+        if (!chosenIgPage) chosenIgPage = p;
+      }
+      if (preferredFbPageId && p.id === preferredFbPageId) {
+        chosenFb = p;
+      }
+    }
+
+    const animePage = pages.find(p => (p.name || '').toLowerCase().replace(/\s+/g, '').includes('anime'));
+    if (animePage) {
+      chosenFb = animePage;
+    } else if (!preferredFbPageId && chosenIgPage) {
+      chosenFb = chosenIgPage;
+    }
+
+    const chosenIgBiz = (chosenIgPage && chosenIgPage.instagram_business_account) || {};
+    const chosenIgConn = (chosenIgPage && chosenIgPage.connected_instagram_account) || {};
+    let igAcct = chosenIgBiz.id ? chosenIgBiz : chosenIgConn;
+
+    for (const [igId, igObj] of directIgMap.entries()) {
+      if (!allIg.some(x => x.ig_user_id === igId)) {
+        allIg.push({
+          ig_user_id: igId,
+          ig_username: igObj.username || '',
+          ig_name: igObj.name || '',
+          linked_via_fb_page_id: chosenFb ? chosenFb.id : '',
+          linked_via_fb_page_name: chosenFb ? chosenFb.name : 'Direct Token Scope',
+        });
+      }
+      if (!igAcct || !igAcct.id) {
+        igAcct = igObj;
+      }
+    }
+
+    const discovered = {
+      discovered: Boolean(pages.length || allIg.length),
+      fb_page_id: chosenFb.id || '',
+      fb_page_name: chosenFb.name || '',
+      fb_page_access_token: chosenFb.access_token || fbToken,
+      ig_user_id: (igAcct && igAcct.id) || '',
+      ig_username: (igAcct && igAcct.username) || '',
+      ig_linked_fb_page_id: (chosenIgPage && chosenIgPage.id) || (chosenFb && chosenFb.id) || '',
+      ig_linked_fb_page_name: (chosenIgPage && chosenIgPage.name) || (chosenFb && chosenFb.name) || '',
+      ig_access_token: (chosenIgPage && chosenIgPage.access_token) || fbToken,
+      all_pages: allPages,
+      all_instagram_accounts: allIg,
+      token_scopes: tokenScopes,
+      granular_scopes: granularScopes,
+      debug_log: debugLog,
+    };
+    await fetch('/api/studio/save-discovered', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(discovered),
+    });
+    return discovered;
   }
 
   async function loadStudioConfig(runBrowserDiscovery = true) {
