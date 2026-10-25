@@ -310,31 +310,26 @@ def create_app() -> FastAPI:
 
         env_file.write_text("\n".join(new_lines) + "\n", encoding="utf-8")
 
-    def _build_studio_status() -> dict:
-        from tools.publishers.social_media_publisher import SocialMediaPublisher
+    META_CACHE_FILE = REPO_ROOT / ".backlot" / "meta_discovered.json"
 
+    def _build_studio_status() -> dict:
         fb_token = (_os.environ.get("FB_ACCESS_TOKEN") or _os.environ.get("META_ACCESS_TOKEN") or "").strip()
         llm_key = (_os.environ.get("OPENAI_API_KEY") or _os.environ.get("VELONA_API_KEY") or "").strip()
-        pub = SocialMediaPublisher()
+
         discovered = {"discovered": False, "all_pages": [], "all_instagram_accounts": []}
-        if fb_token:
-            discovered = pub.discover_meta_accounts(
-                fb_token,
-                preferred_fb_page_id=_os.environ.get("FB_PAGE_ID", ""),
-                preferred_ig_user_id=_os.environ.get("IG_USER_ID", ""),
-            )
-            if discovered.get("discovered"):
-                if discovered.get("fb_page_id") and not _os.environ.get("FB_PAGE_ID"):
-                    _os.environ["FB_PAGE_ID"] = discovered["fb_page_id"]
-                if discovered.get("ig_user_id") and not _os.environ.get("IG_USER_ID"):
-                    _os.environ["IG_USER_ID"] = discovered["ig_user_id"]
+        if META_CACHE_FILE.is_file():
+            try:
+                discovered = json.loads(META_CACHE_FILE.read_text(encoding="utf-8"))
+            except Exception:
+                pass
 
         return {
             "has_fb_token": bool(fb_token),
+            "fb_access_token": fb_token,
             "fb_token_masked": (f"{fb_token[:6]}...{fb_token[-4:]}" if len(fb_token) > 12 else ("SET" if fb_token else "")),
-            "fb_page_id": _os.environ.get("FB_PAGE_ID", ""),
+            "fb_page_id": _os.environ.get("FB_PAGE_ID", "") or discovered.get("fb_page_id", ""),
             "fb_page_name": _os.environ.get("FB_PAGE_NAME", "") or discovered.get("fb_page_name", ""),
-            "ig_user_id": _os.environ.get("IG_USER_ID", ""),
+            "ig_user_id": _os.environ.get("IG_USER_ID", "") or discovered.get("ig_user_id", ""),
             "ig_username": discovered.get("ig_username", ""),
             "monetization_url": _os.environ.get("MONETIZATION_URL", ""),
             "monetization_keyword": _os.environ.get("MONETIZATION_KEYWORD", "LINK"),
@@ -348,6 +343,22 @@ def create_app() -> FastAPI:
 
     @app.get("/api/studio/config")
     async def studio_config() -> dict:
+        return await asyncio.to_thread(_build_studio_status)
+
+    @app.post("/api/studio/save-discovered")
+    async def studio_save_discovered(request: Request) -> dict:
+        body = await request.json()
+        META_CACHE_FILE.parent.mkdir(parents=True, exist_ok=True)
+        META_CACHE_FILE.write_text(json.dumps(body, indent=2), encoding="utf-8")
+        env_updates = {}
+        if body.get("fb_page_id"):
+            env_updates["FB_PAGE_ID"] = str(body["fb_page_id"])
+        if body.get("fb_page_name"):
+            env_updates["FB_PAGE_NAME"] = str(body["fb_page_name"])
+        if body.get("ig_user_id"):
+            env_updates["IG_USER_ID"] = str(body["ig_user_id"])
+        if env_updates:
+            await asyncio.to_thread(_update_dotenv_file, env_updates)
         return await asyncio.to_thread(_build_studio_status)
 
     @app.post("/api/studio/save-env")

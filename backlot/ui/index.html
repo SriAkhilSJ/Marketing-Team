@@ -103,7 +103,7 @@
     font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
     font-size: 12px;
     white-space: pre-wrap;
-    max-height: 240px;
+    max-height: 260px;
     overflow: auto;
   }
   .player-wrap {
@@ -140,7 +140,7 @@
       <div>
         <strong style="font-size:16px;">🔒 Secure Sandbox Control Center (.env &amp; Auto-Publisher)</strong>
         <div style="font-size:12px;color:#9aa3b8;margin-top:2px;">
-          Paste your token here to save it directly into the sandbox's private <code>.env</code> file (never shared in chat or Git).
+          Your token is saved in the sandbox <code>.env</code> and your browser connects directly to <code>graph.facebook.com</code> to auto-discover &amp; publish to your Pages and Instagram.
         </div>
       </div>
       <div style="display:flex;gap:8px;align-items:center;">
@@ -155,18 +155,18 @@
         <h3>1. Connect Facebook + Instagram &amp; Monetization</h3>
         <div class="field">
           <label>Single Meta User/Page Access Token (<code>FB_ACCESS_TOKEN</code>)</label>
-          <input type="password" id="fbTokenInput" placeholder="Paste EAAB... token from Graph API Explorer">
+          <input type="password" id="fbTokenInput" placeholder="Token already saved — paste new token here to replace">
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
           <div class="field">
             <label>Facebook Page (Auto-Discovered or Override)</label>
             <select id="fbPageSelect">
-              <option value="">Auto-Discover from Token</option>
+              <option value="">Auto-Discovering from Token...</option>
             </select>
           </div>
           <div class="field">
             <label>Linked Instagram Account</label>
-            <input type="text" id="igAccountDisplay" placeholder="Auto-discovered @username" readonly>
+            <input type="text" id="igAccountDisplay" placeholder="Auto-discovering @username..." readonly>
           </div>
         </div>
         <div style="display:grid;grid-template-columns:2fr 1fr;gap:8px;">
@@ -225,10 +225,10 @@
           <button class="btn secondary" id="runDryBtn">🎬 Render 9:16 Reel + Dry-Run Preview</button>
         </div>
 
-        <div class="player-wrap" id="playerWrap" style="display:none;">
-          <video id="reelPlayer" controls playsinline></video>
+        <div class="player-wrap" id="playerWrap" style="display:flex;">
+          <video id="reelPlayer" src="/media/shadow-awakening-part1/renders/final.mp4" controls playsinline></video>
           <div style="flex:1;min-width:200px;">
-            <div class="result-box" id="jobResultBox">Ready.</div>
+            <div class="result-box" id="jobResultBox">Checking saved Meta token and discovering your Facebook Pages &amp; Instagram account...</div>
           </div>
         </div>
       </div>
@@ -240,10 +240,85 @@
 </div>
 <script type="module" src="/ui/library.js"></script>
 <script>
-  async function loadStudioConfig() {
+  let currentStudioCfg = null;
+
+  async function discoverViaBrowserGraphApi(fbToken, preferredFbPageId) {
+    if (!fbToken) return null;
+    try {
+      const url = `https://graph.facebook.com/v25.0/me/accounts?fields=id,name,access_token,instagram_business_account{id,username,name,followers_count}&access_token=${encodeURIComponent(fbToken)}`;
+      const r = await fetch(url);
+      const payload = await r.json();
+      if (payload.error) {
+        return { discovered: false, reason: payload.error.message || JSON.stringify(payload.error) };
+      }
+      const pages = payload.data || [];
+      if (!pages.length) {
+        return { discovered: false, reason: 'No Facebook Pages returned on this token. Make sure pages_show_list is granted.' };
+      }
+      const allPages = [];
+      const allIg = [];
+      let chosenFb = pages[0];
+      let chosenIgPage = null;
+
+      for (const p of pages) {
+        const ig = p.instagram_business_account || {};
+        allPages.push({
+          fb_page_id: p.id,
+          fb_page_name: p.name,
+          fb_page_access_token: p.access_token || fbToken,
+          has_linked_instagram: Boolean(ig.id),
+          ig_user_id: ig.id || '',
+          ig_username: ig.username || '',
+        });
+        if (ig.id) {
+          allIg.push({
+            ig_user_id: ig.id,
+            ig_username: ig.username || '',
+            ig_name: ig.name || '',
+            ig_followers_count: ig.followers_count,
+            linked_via_fb_page_id: p.id,
+            linked_via_fb_page_name: p.name,
+          });
+          if (!chosenIgPage) chosenIgPage = p;
+        }
+        if (preferredFbPageId && p.id === preferredFbPageId) {
+          chosenFb = p;
+        }
+      }
+      if (!preferredFbPageId && chosenIgPage) {
+        chosenFb = chosenIgPage;
+      }
+      const igAcct = (chosenIgPage && chosenIgPage.instagram_business_account) || {};
+      const discovered = {
+        discovered: true,
+        fb_page_id: chosenFb.id,
+        fb_page_name: chosenFb.name,
+        fb_page_access_token: chosenFb.access_token || fbToken,
+        ig_user_id: igAcct.id || '',
+        ig_username: igAcct.username || '',
+        ig_followers_count: igAcct.followers_count,
+        ig_linked_fb_page_id: (chosenIgPage && chosenIgPage.id) || '',
+        ig_linked_fb_page_name: (chosenIgPage && chosenIgPage.name) || '',
+        ig_access_token: (chosenIgPage && chosenIgPage.access_token) || fbToken,
+        all_pages: allPages,
+        all_instagram_accounts: allIg,
+      };
+      await fetch('/api/studio/save-discovered', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(discovered),
+      });
+      return discovered;
+    } catch (err) {
+      return { discovered: false, reason: err.message };
+    }
+  }
+
+  async function loadStudioConfig(runBrowserDiscovery = true) {
     try {
       const r = await fetch('/api/studio/config');
       const cfg = await r.json();
+      currentStudioCfg = cfg;
       const fbPill = document.getElementById('fbStatusPill');
       if (cfg.has_fb_token) {
         fbPill.textContent = `Meta Token: ${cfg.fb_token_masked}`;
@@ -261,21 +336,43 @@
       if (cfg.monetization_keyword) document.getElementById('monetizationKeywordInput').value = cfg.monetization_keyword;
       if (cfg.openai_model) document.getElementById('llmModelInput').value = cfg.openai_model;
 
+      let disc = cfg.discovered || {};
+      if (runBrowserDiscovery && cfg.fb_access_token && (!disc.discovered || !disc.all_pages || !disc.all_pages.length)) {
+        const fresh = await discoverViaBrowserGraphApi(cfg.fb_access_token, cfg.fb_page_id);
+        if (fresh) {
+          disc = fresh;
+          currentStudioCfg.discovered = fresh;
+        }
+      }
+
       const sel = document.getElementById('fbPageSelect');
-      const pages = (cfg.discovered && cfg.discovered.all_pages) || [];
-      sel.innerHTML = '<option value="">Auto-Discover from Token</option>';
+      const pages = (disc && disc.all_pages) || [];
+      sel.innerHTML = '<option value="">Auto-Selected Page</option>';
       for (const p of pages) {
         const opt = document.createElement('option');
         opt.value = p.fb_page_id;
         opt.textContent = `${p.fb_page_name} (${p.fb_page_id})${p.has_linked_instagram ? ' [IG Linked: @' + p.ig_username + ']' : ''}`;
-        if (p.fb_page_id === cfg.fb_page_id) opt.selected = true;
+        if (p.fb_page_id === (disc.fb_page_id || cfg.fb_page_id)) opt.selected = true;
         sel.appendChild(opt);
       }
       const igDisp = document.getElementById('igAccountDisplay');
-      if (cfg.ig_username || cfg.ig_user_id) {
-        igDisp.value = cfg.ig_username ? `@${cfg.ig_username} (${cfg.ig_user_id})` : cfg.ig_user_id;
+      const igUser = disc.ig_username || cfg.ig_username;
+      const igId = disc.ig_user_id || cfg.ig_user_id;
+      if (igUser || igId) {
+        igDisp.value = igUser ? `@${igUser} (${igId}) [via ${disc.ig_linked_fb_page_name || 'FB Page'}]` : igId;
       } else {
-        igDisp.value = 'Waiting for token discovery...';
+        igDisp.value = disc.reason ? `Check permissions: ${disc.reason}` : 'Waiting for token discovery...';
+      }
+
+      if (disc && disc.discovered) {
+        document.getElementById('jobResultBox').textContent =
+          `✅ Connected to Meta Graph API!\n` +
+          `• Selected Facebook Page: ${disc.fb_page_name} (${disc.fb_page_id})\n` +
+          `• Linked Instagram Account: @${disc.ig_username || 'N/A'} (${disc.ig_user_id || 'none'})\n` +
+          `• All Discovered Pages (${disc.all_pages.length}):\n` +
+          JSON.stringify(disc.all_pages.map(p => ({ fb_page_id: p.fb_page_id, fb_page_name: p.fb_page_name, ig_username: p.ig_username })), null, 2);
+      } else if (disc && disc.reason) {
+        document.getElementById('jobResultBox').textContent = `⚠️ Meta Token Note:\n${disc.reason}`;
       }
     } catch (e) {
       console.error(e);
@@ -304,18 +401,139 @@
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify(payload),
       });
-      const data = await r.json();
+      const cfg = await r.json();
       document.getElementById('fbTokenInput').value = '';
       document.getElementById('llmKeyInput').value = '';
-      await loadStudioConfig();
-      const box = document.getElementById('jobResultBox');
-      document.getElementById('playerWrap').style.display = 'flex';
-      box.textContent = JSON.stringify(data.discovered, null, 2);
+      if (cfg.fb_access_token) {
+        await discoverViaBrowserGraphApi(cfg.fb_access_token, fbPage || cfg.fb_page_id);
+      }
+      await loadStudioConfig(false);
     } finally {
       btn.disabled = false;
       btn.textContent = '💾 Save to Sandbox .env & Auto-Discover Pages';
     }
   });
+
+  async function publishLiveViaBrowser(renderInfo, formattedCaption, monetizationUrl, monetizationCta) {
+    const disc = (currentStudioCfg && currentStudioCfg.discovered) || {};
+    const selectedPageId = document.getElementById('fbPageSelect').value || disc.fb_page_id;
+    const pageObj = ((disc.all_pages || []).find(p => p.fb_page_id === selectedPageId)) || disc;
+    const fbPageId = pageObj.fb_page_id || disc.fb_page_id;
+    const fbPageToken = pageObj.fb_page_access_token || disc.fb_page_access_token || (currentStudioCfg && currentStudioCfg.fb_access_token);
+    const igUserId = disc.ig_user_id;
+    const igToken = disc.ig_access_token || fbPageToken;
+
+    const results = { facebook: null, instagram: null };
+    const publicVideoUrl = `${window.location.origin}${renderInfo.media_url}`;
+
+    // 1. Publish Video to Selected Facebook Page
+    if (fbPageId && fbPageToken) {
+      try {
+        const videoBlob = await (await fetch(renderInfo.media_url)).blob();
+        const fd = new FormData();
+        fd.append('access_token', fbPageToken);
+        fd.append('title', renderInfo.title);
+        fd.append('description', formattedCaption);
+        fd.append('source', videoBlob, 'reel.mp4');
+
+        const fbResp = await fetch(`https://graph.facebook.com/v25.0/${fbPageId}/videos`, {
+          method: 'POST',
+          body: fd,
+        });
+        const fbData = await fbResp.json();
+        if (fbData.id) {
+          let fbCommentId = null;
+          if (monetizationUrl) {
+            const cFd = new FormData();
+            cFd.append('access_token', fbPageToken);
+            cFd.append('message', `${monetizationCta} ${monetizationUrl}`.trim());
+            const cResp = await fetch(`https://graph.facebook.com/v25.0/${fbData.id}/comments`, { method: 'POST', body: cFd });
+            const cJson = await cResp.json();
+            fbCommentId = cJson.id || null;
+          }
+          results.facebook = {
+            status: 'published',
+            fb_page_id: fbPageId,
+            video_id: fbData.id,
+            url: `https://www.facebook.com/${fbPageId}/videos/${fbData.id}/`,
+            first_comment_id: fbCommentId,
+          };
+        } else {
+          results.facebook = { status: 'failed', error: fbData.error || fbData };
+        }
+      } catch (e) {
+        results.facebook = { status: 'failed', error: e.message };
+      }
+    }
+
+    // 2. Publish Reel to Linked Instagram Business Account
+    if (igUserId && igToken) {
+      try {
+        const params = new URLSearchParams({
+          media_type: 'REELS',
+          video_url: publicVideoUrl,
+          caption: formattedCaption,
+          access_token: igToken,
+        });
+        const cResp = await fetch(`https://graph.facebook.com/v25.0/${igUserId}/media`, {
+          method: 'POST',
+          body: params,
+        });
+        const cData = await cResp.json();
+        if (cData.id) {
+          const containerId = cData.id;
+          // Poll container until FINISHED (up to 90s)
+          let ready = false;
+          for (let i = 0; i < 18; i++) {
+            await new Promise(r => setTimeout(r, 5000));
+            const sResp = await fetch(`https://graph.facebook.com/v25.0/${containerId}?fields=status_code,status&access_token=${encodeURIComponent(igToken)}`);
+            const sData = await sResp.json();
+            if (sData.status_code === 'FINISHED') {
+              ready = true;
+              break;
+            }
+            if (sData.status_code === 'ERROR' || sData.status_code === 'EXPIRED') {
+              throw new Error(`Instagram container error: ${JSON.stringify(sData)}`);
+            }
+          }
+          if (ready) {
+            const pResp = await fetch(`https://graph.facebook.com/v25.0/${igUserId}/media_publish`, {
+              method: 'POST',
+              body: new URLSearchParams({ creation_id: containerId, access_token: igToken }),
+            });
+            const pData = await pResp.json();
+            let igCommentId = null;
+            if (pData.id && monetizationUrl) {
+              const icResp = await fetch(`https://graph.facebook.com/v25.0/${pData.id}/comments`, {
+                method: 'POST',
+                body: new URLSearchParams({
+                  message: `${monetizationCta} ${monetizationUrl}`.trim(),
+                  access_token: igToken,
+                }),
+              });
+              const icData = await icResp.json();
+              igCommentId = icData.id || null;
+            }
+            results.instagram = {
+              status: pData.id ? 'published' : 'failed',
+              ig_user_id: igUserId,
+              media_id: pData.id,
+              url: pData.id ? `https://www.instagram.com/reel/${pData.id}/` : null,
+              first_comment_id: igCommentId,
+              raw: pData,
+            };
+          } else {
+            results.instagram = { status: 'processing', container_id: containerId };
+          }
+        } else {
+          results.instagram = { status: 'failed', error: cData.error || cData };
+        }
+      } catch (e) {
+        results.instagram = { status: 'failed', error: e.message };
+      }
+    }
+    return results;
+  }
 
   async function triggerJob(dryRun) {
     const liveBtn = document.getElementById('runLiveBtn');
@@ -324,7 +542,7 @@
     dryBtn.disabled = true;
     const box = document.getElementById('jobResultBox');
     document.getElementById('playerWrap').style.display = 'flex';
-    box.textContent = '⏳ Rendering 9:16 Anime Hook-to-Suspense Reel + Running Meta Publisher...';
+    box.textContent = '⏳ Step 1/2: Rendering 9:16 Anime Hook-to-Suspense Reel MP4...';
     try {
       const r = await fetch('/api/studio/run-job', {
         method: 'POST',
@@ -334,7 +552,7 @@
           part_number: parseInt(document.getElementById('partNumberInput').value || '1', 10),
           total_parts: parseInt(document.getElementById('totalPartsInput').value || '3', 10),
           voice: document.getElementById('voiceSelect').value,
-          dry_run: dryRun,
+          dry_run: true,
         }),
       });
       const data = await r.json();
@@ -342,6 +560,16 @@
         const video = document.getElementById('reelPlayer');
         video.src = data.render.media_url + '?t=' + Date.now();
         video.load();
+      }
+      if (!dryRun && currentStudioCfg && currentStudioCfg.has_fb_token) {
+        box.textContent = '🚀 Step 2/2: Uploading 9:16 Reel MP4 to Facebook Page & Instagram Reels + Posting First-Comment Link...';
+        const livePublish = await publishLiveViaBrowser(
+          data.render,
+          data.publish.formatted_caption,
+          document.getElementById('monetizationUrlInput').value.trim() || currentStudioCfg.monetization_url,
+          currentStudioCfg.monetization_cta || '🔥 Grab the full Anime pack / exclusive link here:'
+        );
+        data.live_meta_publish = livePublish;
       }
       box.textContent = JSON.stringify(data, null, 2);
     } catch (e) {
@@ -355,7 +583,7 @@
   document.getElementById('runLiveBtn').addEventListener('click', () => triggerJob(false));
   document.getElementById('runDryBtn').addEventListener('click', () => triggerJob(true));
 
-  loadStudioConfig();
+  loadStudioConfig(true);
 </script>
 </body>
 </html>
