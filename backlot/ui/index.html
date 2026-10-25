@@ -297,8 +297,13 @@
           chosenFb = p;
         }
       }
-      if (!preferredFbPageId && chosenIgPage) {
-        chosenFb = chosenIgPage;
+      if (!preferredFbPageId) {
+        const animePage = pages.find(p => (p.name || '').toLowerCase().replace(/\s+/g, '').includes('animeedits'));
+        if (animePage) {
+          chosenFb = animePage;
+        } else if (chosenIgPage) {
+          chosenFb = chosenIgPage;
+        }
       }
       const chosenIgBiz = (chosenIgPage && chosenIgPage.instagram_business_account) || {};
       const chosenIgConn = (chosenIgPage && chosenIgPage.connected_instagram_account) || {};
