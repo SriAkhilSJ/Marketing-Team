@@ -1,0 +1,645 @@
+#!/usr/bin/env python3
+"""
+Post content to a Facebook Page using the Facebook Graph API (v20.0) via direct HTTP requests.
+"""
+
+import os
+import json
+from pathlib import Path
+from datetime import datetime
+
+# Load environment variables from a local .env file if present (for local development)
+try:
+    from dotenv import load_dotenv
+    env_path = Path.cwd() / '.env'
+    if env_path.exists():
+        load_dotenv(dotenv_path=env_path)
+except ImportError:
+    pass  # python-dotenv is not installed; skip loading .env
+import sys
+import logging
+import requests
+import uuid
+
+# Add common module to path
+sys.path.insert(0, str(Path(__file__).parent.parent / 'common'))
+
+from templating_utils import process_templated_contents
+from social_media_utils import (
+    setup_logging,
+    get_required_env_var,
+    get_optional_env_var,
+    validate_post_content,
+    handle_api_error,
+    log_success,
+    dry_run_guard,
+    parse_media_files,
+    parse_scheduled_time,
+    is_value_empty_or_na,
+    save_post_response,
+    is_remote_url,
+)
+
+
+GRAPH_API_VERSION = "v25.0"
+GRAPH_API_BASE_URL = f"https://graph.facebook.com/{GRAPH_API_VERSION}"
+
+
+# Module-level logger
+logger = logging.getLogger(__name__)
+
+def _graph_api_post(path: str, access_token: str, *, data=None, files=None, params=None, action: str, timeout: int = 60):
+    """Make a POST request to the Facebook Graph API and return the JSON payload."""
+    params = dict(params or {})
+    params['access_token'] = access_token
+    logger.debug(f"Making Facebook Graph API {action} request to {path} with params={params} and data={data}")
+
+    url = f"{GRAPH_API_BASE_URL}/{path}"
+    try:
+        response = requests.post(url, params=params, data=data, files=files, timeout=timeout)
+    except requests.RequestException as exc:
+        logger.error(f"Facebook Graph API {action} request failed: {exc}")
+        raise
+
+    try:
+        payload = response.json()
+    except ValueError:
+        logger.error(f"Facebook Graph API {action} returned non-JSON response: {response.text}")
+        raise
+
+    if not response.ok or 'error' in payload:
+        error_info = payload.get('error', {}) if isinstance(payload, dict) else payload
+        logger.error(
+            f"Facebook Graph API {action} failed (status {response.status_code}): {error_info}"
+        )
+        raise RuntimeError(f"Facebook Graph API {action} failed")
+
+    return payload
+
+
+def upload_photo(page_id: str, photo_path: str, message: str, published: bool, access_token: str, scheduled_publish_time: int = None) -> str:
+    """Upload a photo to Facebook Page."""
+    data = {'published': str(published).lower()}
+    if message:
+        data['message'] = message
+    
+    # Add scheduled publish time if provided
+    if scheduled_publish_time:
+        data['scheduled_publish_time'] = str(scheduled_publish_time)
+        logger.info(f"Photo will be scheduled for: {scheduled_publish_time}")
+
+    try:
+        with open(photo_path, 'rb') as photo_file:
+            payload = _graph_api_post(
+                f"{page_id}/photos",
+                access_token,
+                data=data,
+                files={'source': photo_file},
+                action="photo upload"
+            )
+    except Exception as exc:
+        logger.error(f"Failed to upload photo {photo_path}: {exc}")
+        raise
+
+    return payload.get('post_id') or payload.get('id')
+
+
+def upload_video(page_id: str, video_path: str, description: str, published: bool, access_token: str, scheduled_publish_time: int = None, title: str = None) -> str:
+    """
+    Upload a video to Facebook Page using resumable upload.
+    
+    Uses Facebook's resumable upload API for better reliability with large files:
+    1. Start upload session
+    2. Upload video in chunks
+    3. Finish upload
+    
+    For small videos (<5MB), falls back to simple upload.
+    """
+    if is_remote_url(video_path):
+        logger.info(f"Uploading hosted video to Facebook directly from URL: {video_path}")
+        return _upload_video_from_url(page_id, video_path, description, published, access_token, scheduled_publish_time, title)
+
+    video_size = os.path.getsize(video_path)
+    logger.info(f"Uploading video {video_path} (size: {video_size} bytes)")
+    
+    # Use resumable upload for videos larger than 5MB (configurable threshold)
+    threshold_mb = int(get_optional_env_var("VIDEO_UPLOAD_THRESHOLD_MB", "5"))
+    threshold_bytes = threshold_mb * 1024 * 1024
+    
+    if video_size < threshold_bytes:
+        logger.info(f"Video is smaller than {threshold_mb}MB, using simple upload")
+        return _upload_video_simple(page_id, video_path, description, published, access_token, scheduled_publish_time, title)
+    else:
+        logger.info(f"Video is larger than {threshold_mb}MB, using resumable upload")
+        return _upload_video_resumable(page_id, video_path, description, published, access_token, scheduled_publish_time, title)
+
+
+def _upload_video_from_url(page_id: str, video_url: str, description: str, published: bool, access_token: str, scheduled_publish_time: int = None, title: str = None) -> str:
+    """Upload a hosted video by passing its public URL to Facebook's Graph API."""
+    data = {
+        'published': str(published).lower(),
+        'file_url': video_url,
+    }
+    if description:
+        data['description'] = description
+    if title:
+        data['title'] = title
+        logger.info(f"Video title: {title}")
+    if scheduled_publish_time:
+        data['scheduled_publish_time'] = str(scheduled_publish_time)
+        logger.info(f"Video will be scheduled for: {scheduled_publish_time}")
+
+    payload = _graph_api_post(
+        f"{page_id}/videos",
+        access_token,
+        data=data,
+        action="video upload (file_url)"
+    )
+    return payload.get('id')
+
+
+def _upload_video_simple(page_id: str, video_path: str, description: str, published: bool, access_token: str, scheduled_publish_time: int = None, title: str = None) -> str:
+    """Upload a small video using simple POST request."""
+    data = {'published': str(published).lower()}
+    if description:
+        data['description'] = description
+    
+    # Add title if provided
+    if title:
+        data['title'] = title
+        logger.info(f"Video title: {title}")
+    
+    # Add scheduled publish time if provided
+    if scheduled_publish_time:
+        data['scheduled_publish_time'] = str(scheduled_publish_time)
+        logger.info(f"Video will be scheduled for: {scheduled_publish_time}")
+
+    try:
+        with open(video_path, 'rb') as video_file:
+            payload = _graph_api_post(
+                f"{page_id}/videos",
+                access_token,
+                data=data,
+                files={'source': video_file},
+                action="video upload (simple)"
+            )
+    except Exception as exc:
+        logger.error(f"Failed to upload video {video_path}: {exc}")
+        raise
+
+    return payload.get('id')
+
+
+def _upload_video_resumable(page_id: str, video_path: str, description: str, published: bool, access_token: str, scheduled_publish_time: int = None, title: str = None) -> str:
+    """
+    Upload a large video using Facebook's resumable upload API.
+    
+    This approach uploads video in chunks to avoid timeout issues with large files.
+    See: https://developers.facebook.com/docs/video-api/guides/publishing
+    """
+    video_size = os.path.getsize(video_path)
+    
+    # Step 1: Start upload session
+    logger.info("Step 1: Starting upload session...")
+    start_data = {
+        'upload_phase': 'start',
+        'file_size': str(video_size)
+    }
+    start_payload = _graph_api_post(
+        f"{page_id}/videos",
+        access_token,
+        data=start_data,
+        action="start upload session"
+    )
+    
+    upload_session_id = start_payload.get('upload_session_id')
+    video_id = start_payload.get('video_id')
+    
+    if not upload_session_id:
+        raise RuntimeError("Failed to get upload_session_id from start phase")
+    
+    logger.info(f"Upload session started: session_id={upload_session_id}, video_id={video_id}")
+    
+    # Step 2: Transfer video data in chunks
+    logger.info("Step 2: Transferring video data in chunks...")
+    # Use 4MB chunks - this is Facebook's recommended chunk size for video uploads
+    chunk_size = 1024 * 1024 * 4  # 4MB chunks
+    start_offset = 0
+    
+    try:
+        with open(video_path, 'rb') as video_file:
+            while start_offset < video_size:
+                # Read chunk
+                video_file.seek(start_offset)
+                chunk = video_file.read(chunk_size)
+                
+                # Defensive check - should not happen given while condition, but prevents infinite loop
+                if not chunk:
+                    break
+                
+                # Upload chunk
+                chunk_end = min(start_offset + len(chunk), video_size)
+                logger.info(f"Uploading chunk: bytes {start_offset}-{chunk_end-1}/{video_size}")
+                
+                transfer_data = {
+                    'upload_phase': 'transfer',
+                    'upload_session_id': upload_session_id,
+                    'start_offset': str(start_offset)
+                }
+                
+                # Use files parameter for binary data
+                transfer_payload = _graph_api_post(
+                    f"{page_id}/videos",
+                    access_token,
+                    data=transfer_data,
+                    files={'video_file_chunk': chunk},
+                    action="transfer video chunk",
+                    timeout=300  # 5 minutes for chunk upload
+                )
+                
+                logger.debug(f"Chunk upload response: {transfer_payload}")
+                
+                start_offset += len(chunk)
+        
+        logger.info("Video data transfer complete")
+        
+    except Exception as exc:
+        logger.error(f"Failed to transfer video chunks: {exc}")
+        raise
+    
+    # Step 3: Finish upload
+    logger.info("Step 3: Finishing upload...")
+    finish_data = {
+        'upload_phase': 'finish',
+        'upload_session_id': upload_session_id
+    }
+    
+    if description:
+        finish_data['description'] = description
+    
+    # Add title if provided
+    if title:
+        finish_data['title'] = title
+        logger.info(f"Video title: {title}")
+    
+    finish_data['published'] = str(published).lower()
+    
+    # Add scheduled publish time if provided
+    if scheduled_publish_time:
+        finish_data['scheduled_publish_time'] = str(scheduled_publish_time)
+        logger.info(f"Video will be scheduled for: {scheduled_publish_time}")
+    
+    finish_payload = _graph_api_post(
+        f"{page_id}/videos",
+        access_token,
+        data=finish_data,
+        action="finish upload"
+    )
+    
+    success = finish_payload.get('success', False)
+    
+    if not success:
+        raise RuntimeError(f"Upload finish phase failed: {finish_payload}")
+    
+    logger.info(f"Video upload completed successfully: video_id={video_id}")
+    
+    return video_id
+
+
+def post_comment(post_id: str, access_token: str, message: str) -> str:
+    """Post a comment on a Facebook post.
+    
+    Args:
+        post_id: The Facebook post ID to comment on
+        access_token: Facebook Page access token
+        message: The comment message text (can include links)
+        
+    Returns:
+        The comment ID
+        
+    Note:
+        - Comments only support text messages (including links in text)
+        - Media files cannot be directly uploaded to comments
+        - Comments cannot be scheduled
+    """
+    comment_data = {
+        'message': message
+    }
+    
+    payload = _graph_api_post(
+        f"{post_id}/comments",
+        access_token,
+        data=comment_data,
+        action="post comment"
+    )
+    
+    return payload.get('id')
+
+
+def post_content() -> str:
+    """Create a new Facebook Page feed post and return the post id.
+
+    This helper centralizes the 'create post' flow so tests can call it directly.
+    It reads environment variables via the common helpers and performs the
+    necessary validations and uploads.
+    """
+    # Ensure logging is configured when called directly in tests
+    log_level = get_optional_env_var("LOG_LEVEL", "INFO")
+    logger = setup_logging(log_level)
+
+    # Required parameters
+    access_token = get_required_env_var("FB_ACCESS_TOKEN")
+    page_id = get_required_env_var("FB_PAGE_ID")
+
+    # Privacy and published state
+    privacy_mode = get_optional_env_var("POST_PRIVACY", "public").strip().lower()
+    if privacy_mode not in {"public", "private"}:
+        logger.error("POST_PRIVACY must be either 'public' or 'private'")
+        sys.exit(1)
+    published = privacy_mode == "public"
+
+    # Get templated content + link
+    content_raw = get_required_env_var("POST_CONTENT")
+    link = get_optional_env_var("POST_LINK", "")
+    title = get_optional_env_var("POST_TITLE", "")
+
+    templated = process_templated_contents(content_raw, link)
+    if isinstance(templated, tuple):
+        if len(templated) == 2:
+            content, link = templated
+        elif len(templated) == 1:
+            content = templated[0]
+        else:
+            content = templated
+    else:
+        content = templated
+
+    # Validate content
+    if not validate_post_content(content):
+        sys.exit(1)
+
+    media_input = get_optional_env_var("MEDIA_FILES", "")
+    media_files = parse_media_files(media_input, preserve_remote_video_urls=True)
+
+    # Scheduling
+    scheduled_time_str = get_optional_env_var("SCHEDULED_PUBLISH_TIME", "")
+    scheduled_publish_time = None
+    if scheduled_time_str:
+        scheduled_time_iso = parse_scheduled_time(scheduled_time_str)
+        if scheduled_time_iso:
+            dt = datetime.fromisoformat(scheduled_time_iso.replace('Z', '+00:00'))
+            scheduled_publish_time = int(dt.timestamp())
+            logger.info(f"Post will be scheduled for: {scheduled_time_iso} (Unix timestamp: {scheduled_publish_time})")
+            if published:
+                logger.info("Scheduling requires post to be initially unpublished. Setting published=False.")
+                published = False
+
+    # Link-in-comment options
+    link_in_comment = get_optional_env_var("LINK_IN_COMMENT", "").lower() in ('1', 'true', 'yes')
+    pin_link_comment = get_optional_env_var("PIN_LINK_COMMENT", "").lower() in ('1', 'true', 'yes')
+
+    # TEXT_FORMAT_PRESET_ID (background text posts)
+    text_format_preset_id = get_optional_env_var("TEXT_FORMAT_PRESET_ID", "").strip()
+
+    # Determine whether to apply the text format preset. If any condition for
+    # background text posts is violated, log a warning and skip applying the
+    # preset, but continue with posting.
+    apply_text_format_preset = False
+    if text_format_preset_id:
+        apply_text_format_preset = True
+        if media_files:
+            logger.warning("Background text posts (text_format_preset_id) cannot include images or videos. Skipping text_format_preset_id.")
+            apply_text_format_preset = False
+        if link and not link_in_comment:
+            logger.warning("Background text posts (text_format_preset_id) cannot include links. Use LINK_IN_COMMENT to attach link as a comment. Skipping text_format_preset_id.")
+            apply_text_format_preset = False
+        if len(content) > 130:
+            logger.warning("Post content exceeds maximum length of 130 characters; skipping text_format_preset_id.")
+            apply_text_format_preset = False
+
+    # Build post payload
+    post_data = {
+        'message': content,
+        'published': str(published).lower(),
+    }
+
+    if apply_text_format_preset:
+        post_data['text_format_preset_id'] = text_format_preset_id
+
+    if link and not link_in_comment:
+        post_data['link'] = link
+    if not published:
+        post_data['published'] = 'false'
+    if scheduled_publish_time:
+        post_data['scheduled_publish_time'] = str(scheduled_publish_time)
+
+    # Dry-run guard
+    dry_run_request = dict(post_data)
+    if media_files:
+        dry_run_request['media_files'] = ', '.join(media_files)
+    dry_run_request['privacy'] = 'scheduled' if scheduled_publish_time else privacy_mode
+    if scheduled_publish_time:
+        dry_run_request['scheduled_for'] = scheduled_time_str
+    if link_in_comment and link:
+        dry_run_request['link_in_comment'] = link
+        dry_run_request['pin_link_comment'] = pin_link_comment
+    dry_run_guard("Facebook Page", content, media_files, dry_run_request)
+
+    # Handle media uploads and post creation
+    if media_files:
+        if len(media_files) == 1:
+            media_file = media_files[0]
+            file_ext = Path(media_file).suffix.lower()
+
+            if file_ext in ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp', '.tiff', '.tif']:
+                post_id = upload_photo(page_id, media_file, content, published, access_token, scheduled_publish_time)
+            elif file_ext in ['.mp4', '.mov', '.avi', '.wmv', '.mpg', '.mpeg', '.webm', '.flv', '.m4v', '.mkv', '.3gp', '.3g2', '.ogv']:
+                post_id = upload_video(page_id, media_file, content, published, access_token, scheduled_publish_time, title)
+            else:
+                logger.warning(f"Unsupported media type: {file_ext}")
+                payload = _graph_api_post(
+                    f"{page_id}/feed",
+                    access_token,
+                    data=post_data,
+                    action="create feed post"
+                )
+                post_id = payload.get('id')
+        else:
+            image_exts = {'.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp', '.tiff', '.tif'}
+            video_exts = {'.mp4', '.mov', '.avi', '.wmv', '.mpg', '.mpeg', '.webm', '.flv', '.m4v', '.mkv', '.3gp', '.3g2', '.ogv'}
+            image_files = [m for m in media_files if Path(m).suffix.lower() in image_exts]
+            video_files = [m for m in media_files if Path(m).suffix.lower() in video_exts]
+
+            if image_files and not video_files:
+                logger.info("Multiple images detected. Uploading as attached media.")
+                attached_media = []
+                for media_file in image_files:
+                    try:
+                        with open(media_file, 'rb') as photo_file:
+                            payload = _graph_api_post(
+                                f"{page_id}/photos",
+                                access_token,
+                                data={'published': 'false'},
+                                files={'source': photo_file},
+                                action="photo upload (unpublished)"
+                            )
+                        media_id = payload.get('id') or payload.get('post_id')
+                        if not media_id:
+                            raise RuntimeError(f"No media id returned for {media_file}")
+                        attached_media.append({'media_fbid': media_id})
+                    except Exception as exc:
+                        logger.error(f"Failed to upload photo {media_file} for attached media: {exc}")
+                        raise
+
+                post_data_with_media = dict(post_data)
+                post_data_with_media['attached_media'] = json.dumps(attached_media)
+                payload = _graph_api_post(
+                    f"{page_id}/feed",
+                    access_token,
+                    data=post_data_with_media,
+                    action="create feed post with attached media"
+                )
+                post_id = payload.get('id')
+            else:
+                logger.error("Facebook does not support mixed media types (photos + videos) or multiple videos in a single feed post.")
+                sys.exit(1)
+    else:
+        payload = _graph_api_post(
+            f"{page_id}/feed",
+            access_token,
+            data=post_data,
+            action="create feed post"
+        )
+        post_id = payload.get('id')
+
+    post_url = f"https://www.facebook.com/{post_id}" if (published and not scheduled_publish_time) else "(Scheduled/Unpublished post - no public URL yet)"
+
+    if 'GITHUB_OUTPUT' in os.environ:
+        with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
+            f.write(f"post-id={post_id}\n")
+            f.write(f"post-url={post_url}\n")
+            if scheduled_publish_time:
+                f.write(f"scheduled-time={scheduled_time_str}\n")
+
+    save_post_response("facebook", success=True, post_id=post_id, post_url=post_url)
+    log_success("Facebook Page", post_id)
+    logger.info(f"Post URL: {post_url}")
+    if scheduled_publish_time:
+        logger.info(f"Post scheduled for: {scheduled_time_str}")
+
+    # Post POST_LINK as a comment if LINK_IN_COMMENT flag is set (only for published posts)
+    if link_in_comment and link and not scheduled_publish_time:
+        logger.info(f"Posting link as comment on Facebook post {post_id}: {link}")
+        try:
+            comment_id = post_comment(post_id, access_token, link)
+            logger.info(f"Link comment posted successfully. Comment ID: {comment_id}")
+            if pin_link_comment:
+                logger.warning("Pinning comments is not supported by the Facebook Graph API.")
+        except Exception as comment_exc:
+            logger.warning(f"Failed to post link as comment on Facebook: {comment_exc}")
+    elif link_in_comment and not link:
+        logger.warning("LINK_IN_COMMENT is set but no POST_LINK was provided; skipping comment.")
+    elif link_in_comment and link and scheduled_publish_time:
+        logger.info("LINK_IN_COMMENT is set but post is scheduled; comment will not be posted now.")
+
+    return post_id
+
+
+def post_to_facebook():
+    """Main function to post content to Facebook Page or comment on a post."""
+    # Setup logging
+    log_level = get_optional_env_var("LOG_LEVEL", "INFO")
+    logger = setup_logging(log_level)
+    
+    try:
+        # Get required parameters
+        access_token = get_required_env_var("FB_ACCESS_TOKEN")
+        content = get_required_env_var("POST_CONTENT")
+        
+        # Check if we're posting a comment instead of a new post
+        fb_post_id = get_optional_env_var("FB_POST_ID", "")
+        
+        # Treat N/A and its variations as empty
+        if not is_value_empty_or_na(fb_post_id):
+            # Comment mode - post as a comment on the specified post
+            logger.info(f"Comment mode: posting comment on post {fb_post_id}")
+            
+            # Get optional parameters for comment
+            link = get_optional_env_var("POST_LINK", "")
+            media_input = get_optional_env_var("MEDIA_FILES", "")
+            
+            # For comments, don't parse/download media files - just get the raw input
+            raw_media_urls = []
+            if media_input:
+                # Split by comma and strip whitespace
+                raw_media_urls = [url.strip() for url in media_input.split(',') if url.strip()]
+            
+            # Process templated content and link using the same JSON root
+            templated = process_templated_contents(content, link)
+            if isinstance(templated, tuple):
+                if len(templated) == 2:
+                    content, link = templated
+                elif len(templated) == 1:
+                    content = templated[0]
+            else:
+                content = templated
+            
+            # Validate content
+            if not validate_post_content(content):
+                sys.exit(1)
+            
+            # Build the comment message
+            comment_message = content
+            
+            # If link is provided, append it to the message
+            if link:
+                comment_message = f"{content}\n{link}"
+                logger.info(f"Link will be included in comment text: {link}")
+            
+            # If media files are provided, include them as URLs in the message
+            if raw_media_urls:
+                logger.warning("Note: Media files cannot be directly uploaded to comments. URLs will be included in the comment text.")
+                for media_url in raw_media_urls:
+                    # If it's a URL, add it to the message
+                    if media_url.startswith('http://') or media_url.startswith('https://'):
+                        comment_message = f"{comment_message}\n{media_url}"
+                    else:
+                        logger.warning(f"Local file {media_url} cannot be included in a comment. Please provide a URL instead.")
+            
+            # DRY RUN GUARD
+            dry_run_request = {
+                'post_id': fb_post_id,
+                'message': comment_message
+            }
+            dry_run_guard("Facebook Comment", comment_message, [], dry_run_request)
+            
+            # Post the comment
+            comment_id = post_comment(fb_post_id, access_token, comment_message)
+            
+            comment_url = f"https://www.facebook.com/{comment_id}"
+            
+            # Output for GitHub Actions
+            if 'GITHUB_OUTPUT' in os.environ:
+                with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
+                    f.write(f"comment-id={comment_id}\n")
+                    f.write(f"comment-url={comment_url}\n")
+            
+            save_post_response("facebook", success=True, post_id=comment_id, post_url=comment_url)
+            log_success("Facebook Comment", comment_id)
+            logger.info(f"Comment URL: {comment_url}")
+            return
+        
+        # Normal post mode - delegate to helper
+        return post_content()
+        
+    except Exception as e:
+        save_post_response("facebook", success=False, error=str(e))
+        handle_api_error(e, "Facebook Page")
+
+
+if __name__ == "__main__":
+    post_to_facebook()
+
+
+# Expose `main` for tests and CLI wiring
+main = post_to_facebook

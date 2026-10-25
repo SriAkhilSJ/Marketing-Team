@@ -1,0 +1,89 @@
+name: 'Post to Instagram'
+description: 'Post content to Instagram using the Instagram Basic Display API'
+author: 'Gerald Nguyen'
+branding:
+  icon: 'instagram'
+  color: 'purple'
+
+inputs:
+  access-token:
+    description: 'Instagram User Access Token'
+    required: true
+  user-id:
+    description: 'Instagram User ID'
+    required: true
+  content:
+    description: 'Caption for the Instagram post'
+    required: true
+  media-file:
+    description: 'Path to single image or video file to post (use either media-file OR media-files)'
+    required: false
+  media-files:
+    description: 'Comma-separated list of media file paths for carousel post (max 10, use either media-file OR media-files)'
+    required: false
+  log-level:
+    description: 'Logging level (DEBUG, INFO, WARNING, ERROR)'
+    required: false
+    default: 'INFO'
+  retry:
+    description: 'Overall retry policy for network requests: <retries>*immediately, <retries>*delay(<seconds>), or <retries>*exp(<seconds>). Leave empty to fail immediately.'
+    required: false
+  content-json:
+    description: 'JSON API URL and path for dynamic content templating (e.g. https://example.com/data.json | items[RANDOM])'
+    required: false
+  time-zone:
+    description: 'Time zone for date/time placeholders (e.g. UTC, UTC+7)'
+    required: false
+  dry-run:
+    description: 'Dry run mode. If true, the content will be printed but not posted.'
+    required: false
+    default: 'false'
+  save-response:
+    description: 'Save post response summary to instagram-response.json (success, error, post_id, post_url).'
+    required: false
+    default: 'false'
+  link-in-comment:
+    description: 'Post the provided link as a comment on the published post (optional).'
+    required: false
+  pin-link-comment:
+    description: 'Pin the link comment so it stays visible (platform support varies). Requires link-in-comment.'
+    required: false
+    default: 'false'
+
+outputs:
+  post-id:
+    description: 'ID of the created post'
+  post-url:
+    description: 'URL of the created post'
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Setup Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+    
+    - name: Install dependencies
+      shell: bash
+      run: |
+        pip install -r ${{ github.action_path }}/requirements.txt
+    
+    - name: Post to Instagram
+      shell: bash
+      env:
+        IG_ACCESS_TOKEN: ${{ inputs.access-token }}
+        IG_USER_ID: ${{ inputs.user-id }}
+        POST_CONTENT: ${{ inputs.content }}
+        MEDIA_FILE: ${{ inputs.media-file }}
+        MEDIA_FILES: ${{ inputs.media-files }}
+        LOG_LEVEL: ${{ inputs.log-level }}
+        RETRY: ${{ inputs.retry }}
+        CONTENT_JSON: ${{ inputs.content-json }}
+        TIME_ZONE: ${{ inputs.time-zone }}
+        DRY_RUN: ${{ inputs.dry-run }}
+        SAVE_RESPONSE: ${{ inputs.save-response }}
+        LINK_IN_COMMENT: ${{ inputs.link-in-comment }}
+        PIN_LINK_COMMENT: ${{ inputs.pin-link-comment }}
+      run: |
+        python ${{ github.action_path }}/post_to_instagram.py

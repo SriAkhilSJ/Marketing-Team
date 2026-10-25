@@ -1,0 +1,93 @@
+name: 'Post to X (Twitter)'
+description: 'Post content to X (formerly Twitter) using the X API v2'
+author: 'Gerald Nguyen'
+branding:
+  icon: 'twitter'
+  color: 'blue'
+
+inputs:
+  api-key:
+    description: 'X API Key (Consumer Key)'
+    required: true
+  api-secret:
+    description: 'X API Secret (Consumer Secret)'
+    required: true
+  access-token:
+    description: 'X Access Token'
+    required: true
+  access-token-secret:
+    description: 'X Access Token Secret'
+    required: true
+  content:
+    description: 'Content to post to X'
+    required: true
+  media-files:
+    description: 'Comma-separated list of media file paths to attach (optional)'
+    required: false
+  log-level:
+    description: 'Logging level (DEBUG, INFO, WARNING, ERROR)'
+    required: false
+    default: 'INFO'
+  retry:
+    description: 'Overall retry policy for network requests: <retries>*immediately, <retries>*delay(<seconds>), or <retries>*exp(<seconds>). Leave empty to fail immediately.'
+    required: false
+  content-json:
+    description: 'JSON API URL and path for dynamic content templating (e.g. https://example.com/data.json | items[RANDOM])'
+    required: false
+  time-zone:
+    description: 'Time zone for date/time placeholders (e.g. UTC, UTC+7)'
+    required: false
+  dry-run:
+    description: 'Dry run mode. If true, the content will be printed but not posted.'
+    required: false
+    default: 'false'
+  save-response:
+    description: 'Save post response summary to x-response.json (success, error, post_id, post_url).'
+    required: false
+    default: 'false'
+  link-in-comment:
+    description: 'If true, POST_LINK is posted as a comment/reply after the main post instead of being attached to it (true/false).'
+    required: false
+  pin-link-comment:
+    description: 'Pin the link comment so it stays visible (platform support varies). Requires link-in-comment.'
+    required: false
+    default: 'false'
+
+outputs:
+  post-id:
+    description: 'ID of the created post'
+  post-url:
+    description: 'URL of the created post'
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Setup Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+    
+    - name: Install dependencies
+      shell: bash
+      run: |
+        pip install -r ${{ github.action_path }}/requirements.txt
+    
+    - name: Post to X
+      shell: bash
+      env:
+        X_API_KEY: ${{ inputs.api-key }}
+        X_API_SECRET: ${{ inputs.api-secret }}
+        X_ACCESS_TOKEN: ${{ inputs.access-token }}
+        X_ACCESS_TOKEN_SECRET: ${{ inputs.access-token-secret }}
+        POST_CONTENT: ${{ inputs.content }}
+        MEDIA_FILES: ${{ inputs.media-files }}
+        LOG_LEVEL: ${{ inputs.log-level }}
+        RETRY: ${{ inputs.retry }}
+        CONTENT_JSON: ${{ inputs.content-json }}
+        TIME_ZONE: ${{ inputs.time-zone }}
+        DRY_RUN: ${{ inputs.dry-run }}
+        SAVE_RESPONSE: ${{ inputs.save-response }}
+        LINK_IN_COMMENT: ${{ inputs.link-in-comment }}
+        PIN_LINK_COMMENT: ${{ inputs.pin-link-comment }}
+      run: |
+        python ${{ github.action_path }}/post_to_x.py
