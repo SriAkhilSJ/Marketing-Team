@@ -491,6 +491,35 @@ class OpenPostClient:
             timeout=max(self.timeout, 120),
         )
 
+    # --------------------------------------------------------------- features
+
+    def account_features(
+        self, account_ids: list[str], *, workspace_id: str = ""
+    ) -> list[dict[str, Any]]:
+        """Report which of ``analytics``, ``engagement``, ``messaging``, ``grow``
+        each account can actually run.
+
+        This is the honest answer to "is analytics on?": a connected account can
+        publish while analytics stay off, or be enabled-but-blocked for a missing
+        OAuth scope. ``availability`` is one of ``available``, ``unsupported``,
+        ``missing_scope``, ``plan_restricted``, and ``effective_enabled`` is
+        fail-closed — it is the only value worth trusting.
+        """
+        account_ids = [a for a in account_ids if a]
+        if not account_ids:
+            return []
+        result = self._request(
+            "GET",
+            "/account-features",
+            params={
+                "workspace_id": self._workspace(workspace_id),
+                "account_ids": ",".join(account_ids),
+            },
+        )
+        if isinstance(result, dict):
+            return list(result.get("features") or [])
+        return result or []
+
     # ------------------------------------------------------------ engagement
 
     def engagement(
@@ -593,6 +622,122 @@ class OpenPostClient:
         return self.wait_for_publication(publication_id) if wait else self.get_publication(publication_id)
 
 
+def run_doctor(client: OpenPostClient) -> list[dict[str, Any]]:
+    """Answer "is this set up?" with checks that fail for a reason.
+
+    Each check carries a name, an ok flag, the observed detail, and — when it
+    fails — what to do next. Ordered so the first failure is the one to fix.
+    """
+    checks: list[dict[str, Any]] = []
+
+    def add(name: str, ok: bool, detail: str, fix: str = "") -> None:
+        checks.append({"check": name, "ok": ok, "detail": detail, "fix": "" if ok else fix})
+
+    add(
+        "instance url",
+        bool(client.config.base_url),
+        client.config.base_url or "unset",
+        "export OPENPOST_BASE_URL=http://127.0.0.1:8080",
+    )
+
+    try:
+        health = client.health()
+        add("instance reachable", True, str(health.get("status") or health.get("version") or "ok"))
+    except OpenPostError as exc:
+        add(
+            "instance reachable",
+            False,
+            str(exc),
+            "Start it: `docker compose up -d` in your openpost clone, and check the port.",
+        )
+        return checks  # nothing below can work
+
+    if not client.config.token:
+        add("token set", False, "OPENPOST_TOKEN is empty", "Settings > Personal > Developer")
+        return checks
+    try:
+        workspaces = client.list_workspaces()
+        add("token valid", True, f"{len(workspaces)} workspace(s) visible")
+    except OpenPostError as exc:
+        add(
+            "token valid",
+            False,
+            f"{exc.status}: {exc}",
+            "401 means expired or revoked; 403 means wrong scope or workspace.",
+        )
+        return checks
+
+    workspace_id = client.config.workspace_id
+    if not workspace_id and workspaces:
+        workspace_id = str(workspaces[0].get("id") or "")
+    add(
+        "workspace resolved",
+        bool(workspace_id),
+        workspace_id or "unset",
+        "export OPENPOST_WORKSPACE_ID=ws_... (see `workspaces`)",
+    )
+    if not workspace_id:
+        return checks
+
+    try:
+        accounts = client.list_accounts(workspace_id)
+    except OpenPostError as exc:
+        add("accounts listed", False, str(exc), "Check the token's workspace binding.")
+        return checks
+
+    add(
+        "accounts connected",
+        bool(accounts),
+        ", ".join(
+            f"{a.get('platform')}:{a.get('account_username') or a.get('alias') or a.get('id')}"
+            for a in accounts
+        )
+        or "none",
+        "Settings > Workspace > Social accounts > connect the account you post from.",
+    )
+    if not accounts:
+        return checks
+
+    account_ids = [str(a.get("id")) for a in accounts if a.get("id")]
+    try:
+        features = client.account_features(account_ids, workspace_id=workspace_id)
+    except OpenPostError as exc:
+        add("features readable", False, str(exc), "Needs api:read on the same workspace.")
+        return checks
+
+    def summarise(feature: str) -> tuple[bool, str]:
+        rows = [f for f in features if f.get("feature") == feature]
+        on = [f for f in rows if f.get("effective_enabled")]
+        blocked = [
+            f"{f.get('platform')}:{f.get('availability')}"
+            + (f" (missing {','.join(f.get('missing_scopes') or [])})" if f.get("missing_scopes") else "")
+            for f in rows
+            if not f.get("effective_enabled")
+        ]
+        detail = f"{len(on)}/{len(rows)} enabled" + (f"; blocked: {'; '.join(blocked)}" if blocked else "")
+        return bool(on), detail
+
+    ok_publish, publish_detail = True, "capability varies per account; test one draft"
+    add("publishing", ok_publish, publish_detail)
+
+    ok_analytics, analytics_detail = summarise("analytics")
+    add(
+        "analytics enabled",
+        ok_analytics,
+        analytics_detail,
+        "Enable Analytics per account in Settings, then reconnect if a scope is missing.",
+    )
+
+    ok_inbox, engagement_detail = summarise("engagement")
+    add(
+        "inbox enabled",
+        ok_inbox,
+        engagement_detail,
+        "Enable Inbox activity per account; it is a separate switch from publishing.",
+    )
+    return checks
+
+
 # --------------------------------------------------------------------------- tool
 
 
@@ -663,7 +808,10 @@ class OpenPostPublisher(BaseTool):
         "properties": {
             "operation": {
                 "type": "string",
-                "enum": ["health", "publish", "status", "analytics", "engagement", "reply"],
+                "enum": [
+                    "health", "doctor", "publish", "status",
+                    "analytics", "engagement", "reply",
+                ],
             },
             "video_path": {"type": "string", "description": "Rendered MP4 to publish."},
             "caption": {"type": "string", "description": "Post text / caption."},
@@ -708,6 +856,15 @@ class OpenPostPublisher(BaseTool):
                 return ToolResult(
                     success=True,
                     data={"operation": "health", "health": health, "workspaces": workspaces},
+                    duration_seconds=time.monotonic() - started,
+                )
+
+            if operation == "doctor":
+                checks = run_doctor(client)
+                return ToolResult(
+                    success=all(c["ok"] for c in checks),
+                    data={"operation": "doctor", "checks": checks,
+                          "setup_complete": all(c["ok"] for c in checks)},
                     duration_seconds=time.monotonic() - started,
                 )
 
@@ -832,6 +989,7 @@ def main(argv: Optional[list[str]] = None) -> int:
     sub = parser.add_subparsers(dest="command", required=True)
 
     sub.add_parser("health", help="Check the instance and list workspaces")
+    sub.add_parser("doctor", help="Check env, token, workspace, accounts, analytics, inbox")
     sub.add_parser("workspaces", help="List workspaces the token can see")
     sub.add_parser("accounts", help="List connected social accounts")
 
@@ -867,6 +1025,17 @@ def main(argv: Optional[list[str]] = None) -> int:
     try:
         if args.command == "health":
             print(json.dumps(client.health(), indent=2, ensure_ascii=False))
+        elif args.command == "doctor":
+            checks = run_doctor(client)
+            width = max(len(c["check"]) for c in checks)
+            for check in checks:
+                mark = "PASS" if check["ok"] else "FAIL"
+                print(f"[{mark}] {check['check'].ljust(width)}  {check['detail']}")
+                if check["fix"]:
+                    print(f"       {' ' * width}  -> {check['fix']}")
+            complete = all(c["ok"] for c in checks)
+            print("\nsetup complete: " + ("yes" if complete else "no"))
+            return 0 if complete else 1
         elif args.command == "workspaces":
             print(json.dumps(client.list_workspaces(), indent=2, ensure_ascii=False))
         elif args.command == "accounts":

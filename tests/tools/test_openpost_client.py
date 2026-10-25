@@ -21,6 +21,7 @@ from tools.publishers.openpost import (
     OpenPostConfig,
     OpenPostError,
     OpenPostPublisher,
+    run_doctor,
 )
 
 
@@ -35,6 +36,7 @@ class _FakeOpenPost:
         self.publish_conflict = False
         self.validation_issues: list[dict[str, Any]] = []
         self.publication_polls = 0
+        self.enabled_features: list[str] = []
         self.analytics_rows = [
             {"Post": "ep01", "Platform": "instagram", "Views": 12400, "Engagement": 830},
             {"Post": "ep02", "Platform": "instagram", "Views": "", "Engagement": 610},
@@ -43,14 +45,42 @@ class _FakeOpenPost:
     # -- routing ---------------------------------------------------------
 
     def handle(self, handler: BaseHTTPRequestHandler, method: str, path: str, body: bytes) -> tuple[int, Any]:
+        raw_path = path
         parsed = json.loads(body) if body else {}
-        self.requests.append({"method": method, "path": path, "body": parsed})
+        self.requests.append({"method": method, "path": raw_path, "body": parsed})
+        path = path.split("?")[0]  # routes ignore the query string
 
         if path.endswith("/api/v1/health"):
             return 200, {"status": "ok", "version": "7.3.1"}
 
         if path.endswith("/api/v1/workspaces") and method == "GET":
             return 200, {"items": [{"id": "ws_1", "name": "Studio"}]}
+
+        if path.endswith("/api/v1/accounts") and method == "GET":
+            return 200, {
+                "items": [
+                    {"id": "acc_ig", "platform": "instagram", "account_username": "bakery"},
+                    {"id": "acc_fb", "platform": "facebook", "account_username": "bakerypage"},
+                ]
+            }
+
+        if path.endswith("/api/v1/account-features") and method == "GET":
+            rows = []
+            for account in ("acc_ig", "acc_fb"):
+                for feature in ("analytics", "engagement"):
+                    enabled = feature in self.enabled_features
+                    rows.append(
+                        {
+                            "social_account_id": account,
+                            "platform": "instagram" if account == "acc_ig" else "facebook",
+                            "feature": feature,
+                            "supported": True,
+                            "availability": "available" if enabled else "missing_scope",
+                            "missing_scopes": [] if enabled else ["instagram_manage_insights"],
+                            "effective_enabled": enabled,
+                        }
+                    )
+            return 200, {"features": rows}
 
         if path.endswith("/api/v1/media/upload-session") and method == "POST":
             if self.deduped:
@@ -269,3 +299,40 @@ def test_tool_returns_failure_instead_of_raising(monkeypatch):
     result = OpenPostPublisher().execute({"operation": "health"})
     assert result.success is False
     assert "OPENPOST_BASE_URL" in (result.error or "")
+
+
+# ------------------------------------------------------------------- doctor
+
+
+def _checks(fake) -> dict[str, dict[str, Any]]:
+    client = _client(fake)
+    return {c["check"]: c for c in run_doctor(client)}
+
+
+def test_doctor_reports_incomplete_when_analytics_and_inbox_are_off(fake):
+    fake.enabled_features = []  # everything is connected, nothing is switched on
+    checks = _checks(fake)
+
+    assert checks["instance reachable"]["ok"] is True
+    assert checks["token valid"]["ok"] is True
+    assert checks["accounts connected"]["ok"] is True
+    assert checks["analytics enabled"]["ok"] is False
+    assert "missing_scope" in checks["analytics enabled"]["detail"]
+    assert checks["inbox enabled"]["ok"] is False
+    assert all(c["ok"] for c in checks.values()) is False
+
+
+def test_doctor_passes_when_every_feature_is_enabled(fake):
+    fake.enabled_features = ["analytics", "engagement"]
+    checks = _checks(fake)
+    assert all(c["ok"] for c in checks.values()), [
+        c for c in checks.values() if not c["ok"]
+    ]
+
+
+def test_doctor_stops_early_when_the_instance_is_unreachable():
+    client = OpenPostClient(OpenPostConfig(base_url="http://127.0.0.1:1", token="t"), timeout=1)
+    checks = run_doctor(client)
+    assert [c["check"] for c in checks] == ["instance url", "instance reachable"]
+    assert checks[-1]["ok"] is False
+    assert "docker compose up -d" in checks[-1]["fix"]

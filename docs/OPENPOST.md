@@ -70,7 +70,38 @@ export OPENPOST_WORKSPACE_ID=ws_...        # from `... workspaces`
 
 Tokens belong in `.env` or a secret store — never in a composition file or a commit.
 
-## 3. Use it
+## 3. Confirm the setup is actually complete
+
+```bash
+python3 -m tools.publishers.openpost doctor
+```
+
+```
+[PASS] instance url        http://127.0.0.1:8080
+[PASS] instance reachable  ok
+[PASS] token valid         1 workspace(s) visible
+[PASS] workspace resolved  ws_...
+[PASS] accounts connected  instagram:bakery, facebook:bakerypage
+[PASS] publishing          capability varies per account; test one draft
+[FAIL] analytics enabled   1/4 enabled; blocked: instagram:missing_scope
+                           -> Enable Analytics per account in Settings, then reconnect if a scope is missing.
+[FAIL] inbox enabled       0/4 enabled; blocked: instagram:missing_scope; facebook:missing_scope
+                           -> Enable Inbox activity per account; it is a separate switch from publishing.
+
+setup complete: no
+```
+
+It exits `0` only when every line passes, so it works as a CI or cron gate. Three checks
+that people get wrong, and the reason `doctor` exists:
+
+- **Connected ≠ enabled.** Analytics and Inbox are per-account switches, and a connected
+  account can publish happily while both are off.
+- **Enabled ≠ available.** `GET /account-features` reports `availability:
+  missing_scope` when OAuth lacks the permission — the switch will look on in the UI and
+  still collect nothing. Reconnect the account to pick up the new scope.
+- **`effective_enabled` is fail-closed.** That is the field to trust, not `stored_enabled`.
+
+## 4. Use it
 
 ```bash
 # is it up, and which workspaces can this token see?
@@ -126,12 +157,13 @@ result = OpenPostPublisher().execute({
 assert result.success, result.error
 ```
 
-`operation` accepts `health`, `publish`, `status`, `analytics`, `engagement`, `reply`.
+`operation` accepts `health`, `doctor`, `publish`, `status`, `analytics`, `engagement`,
+`reply`.
 A failed call returns `ToolResult(success=False, error=...)` — it does not raise.
 
 ---
 
-## 4. The API facts that matter
+## 5. The API facts that matter
 
 These are the things that cost a debugging session when you assume them:
 
@@ -146,8 +178,9 @@ These are the things that cost a debugging session when you assume them:
 | **Analytics** | `GET /analytics/export`. Stored data, not live — a blank cell means *missing*, never zero. Never average a blank into a decision. Durations are stored in ms and percentages in basis points. |
 | **Replies** | `POST /engagement/{id}/actions` with a `client_operation_id`. Reuse the same id when retrying; the server's receipt prevents a duplicate public comment. |
 | **Reading inbox** | `GET /engagement?kind=comment|mention|review` reads saved activity only. It never triggers a provider fetch — that is `POST /engagement/refresh`. |
+| **Feature switches** | `GET /account-features?workspace_id=&account_ids=a,b` is the only honest "is analytics on?". Trust `effective_enabled`; `stored_enabled` can be on while `availability` is `missing_scope`. |
 
-## 5. Using the numbers to steer the next episode
+## 6. Using the numbers to steer the next episode
 
 The point of connecting analytics is not a dashboard; it is a smaller decision next time.
 The rule that keeps this honest:
@@ -162,7 +195,7 @@ The rule that keeps this honest:
 
 Anything more elaborate is guessing with extra steps.
 
-## 6. What OpenPost does not do
+## 7. What OpenPost does not do
 
 - It does not generate or edit the video. You give it a file.
 - It does not make every provider equal: publishing support does not imply analytics,
@@ -170,7 +203,7 @@ Anything more elaborate is guessing with extra steps.
 - It does not refresh provider data on a schedule you control; collection is its own
   job, and a provider may revise a number after publication.
 
-## 7. Tests
+## 8. Tests
 
 `tests/tools/test_openpost_client.py` runs against a local fake server — no instance,
 no token, no network:

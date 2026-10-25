@@ -643,7 +643,7 @@ Runtime is chosen at proposal (`render_runtime`) and locked through `edit_decisi
 |------|-------|--------------|
 | **Export Bundle** | nothing | Packages a finished render plus metadata into a portable folder with a schema-valid `publish_log` |
 | **Social Media Publisher** | `FB_ACCESS_TOKEN` | Instagram Reels + Facebook Page video, first-comment link drop, keyword auto-responder |
-| **OpenPost** | a running OpenPost instance + a developer token | Every network you connected there: upload, publish or schedule, stored per-post analytics, and a comment/mention/review inbox with retry-safe replies. Setup and the API traps: [`docs/OPENPOST.md`](docs/OPENPOST.md) |
+| **OpenPost** | a running OpenPost instance + a developer token | Every network you connected there: upload, publish or schedule, stored per-post analytics, and a comment/mention/review inbox with retry-safe replies. Verify the wiring with `python3 -m tools.publishers.openpost doctor`. Setup and the API traps: [`docs/OPENPOST.md`](docs/OPENPOST.md) |
 
 OpenPost renders and generates nothing — the video tools above produce the file, and
 OpenPost answers what happened after it went out. That feedback is what lets a series
