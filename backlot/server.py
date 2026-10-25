@@ -403,7 +403,13 @@ def create_app() -> FastAPI:
         from tools.video.anime_reel_generator import render_anime_reel_project
 
         body = await request.json()
-        topic = (body.get("topic") or "The E-Rank Hunter Who Awakened Forbidden Shadow Magic").strip()
+        from tools.video.niche_creator_engine import build_creator_intelligence
+
+        topic = (body.get("topic") or "").strip()
+        if not topic:
+            intel = build_creator_intelligence(str(body.get("channel") or "anime_channel"))
+            bps = intel.get("episode_blueprints") or []
+            topic = bps[0]["topic"] if bps else "Mafia Boss Dad & Daughter: New Episode"
         part_number = int(body.get("part_number") or 1)
         total_parts = int(body.get("total_parts") or 3)
         voice = (body.get("voice") or "en-US-ChristopherNeural").strip()
@@ -417,6 +423,9 @@ def create_app() -> FastAPI:
             total_parts=total_parts,
             keyword=_os.environ.get("MONETIZATION_KEYWORD", "LINK"),
             voice=voice,
+            series=str(body.get("series") or "Overprotective Mafia Boss Dad & Daughter"),
+            viewer_signal=str(body.get("viewer_signal") or "Generated from live channel audience telemetry"),
+            approval_status="awaiting_approval" if dry_run else "published",
         )
         _invalidate_summary(render_info["project_id"])
         hub.publish(render_info["project_id"])
@@ -443,6 +452,92 @@ def create_app() -> FastAPI:
             "render": render_info,
             "publish": pub_res.data if pub_res.success else {"error": pub_res.error},
         }
+
+    @app.get("/api/studio/creator-intelligence")
+    async def studio_creator_intelligence(channel: str = "anime_channel") -> dict:
+        from tools.video.niche_creator_engine import build_creator_intelligence
+
+        return await asyncio.to_thread(build_creator_intelligence, channel)
+
+    @app.post("/api/studio/creator/decision")
+    async def studio_creator_decision(request: Request) -> dict:
+        from datetime import datetime, timezone
+        from tools.video.niche_creator_engine import list_creator_queue
+
+        payload = await request.json()
+        pid = str(payload.get("project_id") or "").strip()
+        action = str(payload.get("action") or "accept").strip().lower()
+        pdir = _safe_project_dir(pid)
+        proj_file = pdir / "project.json"
+        script_file = pdir / "artifacts" / "script.json"
+        pub_log_file = pdir / "artifacts" / "publish_log.json"
+
+        proj_data = json.loads(proj_file.read_text(encoding="utf-8")) if proj_file.is_file() else {}
+        script_data = json.loads(script_file.read_text(encoding="utf-8")) if script_file.is_file() else {}
+
+        if payload.get("caption"):
+            script_data["caption"] = str(payload["caption"]).strip()
+            script_file.write_text(json.dumps(script_data, indent=2), encoding="utf-8")
+
+        now_iso = datetime.now(timezone.utc).isoformat()
+        if action == "accept":
+            live_res = payload.get("live_publish") or {}
+            proj_data["approval_status"] = "published" if live_res else "approved"
+            proj_data["approved_at"] = now_iso
+            proj_file.write_text(json.dumps(proj_data, indent=2), encoding="utf-8")
+            (pdir / "checkpoint_publish.json").write_text(
+                json.dumps({"stage": "publish", "status": "completed", "human_approved": True, "timestamp": now_iso}, indent=2),
+                encoding="utf-8",
+            )
+            pub_log_file.write_text(
+                json.dumps({"published_live": bool(live_res), "approved_at": now_iso, "results": live_res}, indent=2),
+                encoding="utf-8",
+            )
+        elif action == "reject":
+            proj_data["approval_status"] = "rejected"
+            proj_data["rejected_at"] = now_iso
+            proj_file.write_text(json.dumps(proj_data, indent=2), encoding="utf-8")
+
+        _invalidate_summary(pid)
+        hub.publish(pid)
+        return {"ok": True, "project_id": pid, "action": action, "queue": list_creator_queue()}
+
+    @app.post("/api/studio/creator/save-upgrade")
+    async def studio_creator_save_upgrade(request: Request) -> dict:
+        from tools.video.niche_creator_engine import (
+            ANALYTICS_FILE,
+            build_creator_intelligence,
+            record_profile_upgrade_result,
+        )
+
+        payload = await request.json()
+        record_profile_upgrade_result(payload)
+        if ANALYTICS_FILE.is_file():
+            try:
+                analytics = json.loads(ANALYTICS_FILE.read_text(encoding="utf-8"))
+                ch_key = str(payload.get("channel_key") or "anime_channel")
+                ch = analytics.get(ch_key) or {}
+                if payload.get("updated_fb_about") and ch.get("facebook", {}).get("profile"):
+                    ch["facebook"]["profile"]["about"] = payload["updated_fb_about"]
+                if payload.get("updated_ig_bio") and ch.get("instagram", {}).get("profile"):
+                    ch["instagram"]["profile"]["biography"] = payload["updated_ig_bio"]
+                repaired_map = {
+                    str(item["video_id"]): item["new_caption"]
+                    for item in (payload.get("repaired_videos") or [])
+                    if isinstance(item, dict) and item.get("video_id") and item.get("new_caption")
+                }
+                if repaired_map and ch.get("facebook", {}).get("videos"):
+                    for v in ch["facebook"]["videos"]:
+                        vid = str(v.get("id") or "")
+                        if vid in repaired_map:
+                            v["description"] = repaired_map[vid]
+                if payload.get("repaired_ig_captions") and ch.get("instagram", {}).get("media"):
+                    for m in ch["instagram"]["media"]:
+                        m["caption"] = payload["repaired_ig_captions"]
+                ANALYTICS_FILE.write_text(json.dumps(analytics, indent=2), encoding="utf-8")
+            except Exception:
+                pass
+        return build_creator_intelligence(str(payload.get("channel_key") or "anime_channel"))
 
     # ---- UI ------------------------------------------------------------
 

@@ -1,4 +1,4 @@
-// Browser-side Meta Graph API v25.0 Creator Audit for @naruto.uzumaki8067 & AnimeEdits
+// Dynamic Browser-side Meta Graph API v25.0 Channel & Reels Auditor (Zero Hardcoded IDs)
 (function () {
   async function safeFetchJson(url) {
     try {
@@ -27,7 +27,7 @@
       `https://graph.facebook.com/v25.0/${igUserId}?fields=${encodeURIComponent(profileFields)}&access_token=${encodeURIComponent(token)}`
     );
 
-    const mediaFields = 'id,caption,media_type,media_product_type,like_count,comments_count,timestamp,permalink,shortcode,thumbnail_url,comments.limit(10){id,text,username,timestamp}';
+    const mediaFields = 'id,caption,media_type,media_product_type,like_count,comments_count,timestamp,permalink,shortcode,thumbnail_url,comments.limit(15){id,text,username,timestamp}';
     const mediaResp = await safeFetchJson(
       `https://graph.facebook.com/v25.0/${igUserId}/media?fields=${encodeURIComponent(mediaFields)}&limit=25&access_token=${encodeURIComponent(token)}`
     );
@@ -67,58 +67,60 @@
     };
   }
 
+  function channelKeyFromPage(pageObj, idx) {
+    const name = String((pageObj && pageObj.fb_page_name) || '').toLowerCase();
+    if (name.includes('anime')) return 'anime_channel';
+    if (name.includes('meme')) return 'memes_channel';
+    const slug = name.replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
+    return slug ? `${slug}_channel` : `channel_${idx + 1}`;
+  }
+
   async function runFullCreatorAudit() {
     try {
       const cfgResp = await fetch('/api/studio/config');
       const cfg = await cfgResp.json();
       const disc = (cfg && cfg.discovered) || {};
       const userToken = cfg && cfg.fb_access_token;
-      if (!userToken && !disc.fb_page_access_token) return null;
-
-      const animePage =
-        ((disc.all_pages || []).find((p) => String(p.fb_page_id) === '1316616991525561')) ||
-        disc;
-      const animePageToken = animePage.fb_page_access_token || disc.fb_page_access_token || userToken;
-      const animeIgId = animePage.ig_user_id || disc.ig_user_id || '17841445027584531';
-
-      const memesPage = (disc.all_pages || []).find((p) => String(p.fb_page_id) === '1256219754250223');
-      const memesPageToken = (memesPage && memesPage.fb_page_access_token) || userToken;
-      const memesIgId = (memesPage && memesPage.ig_user_id) || '17841438515530864';
-
-      const [igAnime, fbAnime, igMemes, fbMemes] = await Promise.all([
-        fetchIgAccountAudit(animeIgId, animePageToken),
-        fetchFbPageAudit('1316616991525561', animePageToken),
-        fetchIgAccountAudit(memesIgId, memesPageToken),
-        fetchFbPageAudit('1256219754250223', memesPageToken),
-      ]);
-
-      const hasRealData =
-        (igAnime && Array.isArray(igAnime.media) && igAnime.media.length > 0) ||
-        (fbAnime && Array.isArray(fbAnime.videos) && fbAnime.videos.length > 0);
-      if (!hasRealData) {
-        return null;
-      }
+      const pages = Array.isArray(disc.all_pages) && disc.all_pages.length
+        ? disc.all_pages
+        : (disc.fb_page_id ? [disc] : []);
+      if (!pages.length || (!userToken && !disc.fb_page_access_token)) return null;
 
       const payload = {
         loaded: true,
         fetched_at: new Date().toISOString(),
-        anime_channel: {
-          ig_user_id: animeIgId,
-          ig_username: 'naruto.uzumaki8067',
-          fb_page_id: '1316616991525561',
-          fb_page_name: 'AnimeEdits',
-          instagram: igAnime,
-          facebook: fbAnime,
-        },
-        memes_channel: {
-          ig_user_id: memesIgId,
-          ig_username: 'memes.com409559',
-          fb_page_id: '1256219754250223',
-          fb_page_name: 'Memes.com',
-          instagram: igMemes,
-          facebook: fbMemes,
-        },
       };
+      let hasRealData = false;
+
+      for (let i = 0; i < pages.length; i++) {
+        const p = pages[i];
+        const pageId = p.fb_page_id;
+        const pageToken = p.fb_page_access_token || userToken;
+        const igId = p.ig_user_id || '';
+        const [igAudit, fbAudit] = await Promise.all([
+          igId ? fetchIgAccountAudit(igId, pageToken) : Promise.resolve(null),
+          pageId ? fetchFbPageAudit(pageId, pageToken) : Promise.resolve(null),
+        ]);
+        if (
+          (igAudit && Array.isArray(igAudit.media) && igAudit.media.length > 0) ||
+          (fbAudit && Array.isArray(fbAudit.videos) && fbAudit.videos.length > 0)
+        ) {
+          hasRealData = true;
+        }
+        const key = channelKeyFromPage(p, i);
+        payload[key] = {
+          ig_user_id: igId,
+          ig_username: p.ig_username || (igAudit && igAudit.profile && igAudit.profile.username) || '',
+          fb_page_id: pageId,
+          fb_page_name: p.fb_page_name || (fbAudit && fbAudit.profile && fbAudit.profile.name) || '',
+          instagram: igAudit,
+          facebook: fbAudit,
+        };
+      }
+
+      if (!hasRealData) {
+        return null;
+      }
 
       await fetch('/api/studio/save-analytics', {
         method: 'POST',

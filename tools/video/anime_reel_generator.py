@@ -133,42 +133,118 @@ def generate_anime_script_via_llm(
         except Exception:
             pass
 
-    # Deterministic Hook-to-Suspense Anime Script Doctor Fallback
-    clean_topic = topic.strip() or "The E-Rank Hunter Who Awakened the Forbidden Shadow"
-    short_title = clean_topic[:52]
-    return {
-        "title": short_title,
-        "caption": (
-            f"Everyone mocked him at the awakening altar—until the ancient seal shattered in Part {part_number}. "
-            f"What happens when the S-Rank Guild realizes who he really is?"
-        ),
-        "hashtags": ["anime", "manhwa", "animeshorts", "darkfantasy", f"part{part_number}", "reels"],
-        "beats": [
+    # Dynamic Niche-Aware Script Synthesizer (adapts to the exact topic & channel lore)
+    clean_topic = topic.strip() or "Mafia Boss Dad & Daughter: The Forbidden Rule"
+    short_title = clean_topic[:56]
+    low = clean_topic.lower()
+
+    if "cat" in low or "lester" in low:
+        beats = [
             {
                 "beat_type": "HOOK",
-                "headline": "ZERO MANA DETECTED?!",
-                "subtext": f"PART {part_number}/{total_parts} • {short_title[:34].upper()}",
-                "narration": f"Part {part_number}. Every guild laughed when the crystal registered zero mana.",
+                "headline": f"PART {part_number}/{total_parts}: NEVER TOUCH MR. CAT",
+                "subtext": "INTRUDERS BROKE INTO THE MAFIA BOSS'S MANOR",
+                "narration": f"Part {part_number} of {total_parts}. Three syndicate assassins thought breaking into the Boss's manor at midnight would be easy.",
             },
             {
                 "beat_type": "TENSION",
-                "headline": "THE DUNGEON SEAL BROKE",
-                "subtext": "S-RANK BOSS EMERGED FROM THE ABYSS",
-                "narration": "Then the double-dungeon gates locked shut, and the statue's eyes turned blood red.",
+                "headline": "LESTER FROZE IN THE HALLWAY",
+                "subtext": "THE DAUGHTER'S PET CAT STEPPED INTO THE SHADOWS",
+                "narration": "Even Lester lowered his weapon when the little girl's fluffy cat stepped between the guards and the door.",
             },
             {
                 "beat_type": "TWIST",
-                "headline": "SYSTEM AWAKENING: SHADOW",
-                "subtext": "SECRET CLASS UNLOCKED AT 0.01 SECONDS",
-                "narration": "A hidden screen appeared before his eyes: Will you accept the Forbidden Monarch contract?",
+                "headline": "POSSESSED CRIMSON EYES IGNITED",
+                "subtext": "ANCIENT SHADOW BEAST UNLEASHED IN 0.2 SECONDS",
+                "narration": "Mr. Cat's eyes turned glowing crimson, and a fifty-foot shadow demon rose behind the smiling toddler.",
             },
             {
                 "beat_type": "CLIFFHANGER",
-                "headline": f"FOLLOW FOR PART {next_part}",
-                "subtext": f"COMMENT '{keyword}' FOR EARLY ACCESS + LINK",
-                "narration": f"Just as his shadow stood up on its own—cut to black. Follow for Part {next_part} and comment {keyword} below!",
+                "headline": f"FOLLOW FOR PART {next_part} · COMMENT {keyword}",
+                "subtext": "FULL SEASON LINK IN BIO & FIRST COMMENT",
+                "narration": f"When the Boss walked in with warm milk, the intruders were already begging for mercy. Follow for Part {next_part} and comment {keyword}!",
             },
-        ],
+        ]
+        caption = (
+            f"🎬 [{short_title} — Part {part_number}/{total_parts}] "
+            f"Looks like his daughter made the right call adopting Mr. Cat! "
+            f"Follow for Part {next_part} & watch the full series via the link in the first comment."
+        )
+        hashtags = ["anime", "animeedits", "aianime", "mafiaboss", "animereels", f"part{part_number}"]
+    elif "flower" in low or "playground" in low or "teacher" in low or "school" in low:
+        beats = [
+            {
+                "beat_type": "HOOK",
+                "headline": f"PART {part_number}/{total_parts}: EVERY MAFIA DAD'S NIGHTMARE",
+                "subtext": "A BOY HANDED HIS LITTLE PRINCESS A FLOWER",
+                "narration": f"Part {part_number} of {total_parts}. The feared crime boss survived ten cartel wars, but nothing prepared him for the playground.",
+            },
+            {
+                "beat_type": "TENSION",
+                "headline": "50 BLACK SUVS SURROUNDED THE PARK",
+                "subtext": "LESTER CALLED FOR TACTICAL BACKUP IMMEDIATELY",
+                "narration": "The moment a seven-year-old boy offered his daughter a daisy, fifty bodyguards in sunglasses locked down the block.",
+            },
+            {
+                "beat_type": "TWIST",
+                "headline": "THE HOMEROOM TEACHER WALKED OVER",
+                "subtext": "THE RUTHLESS BOSS FORGOT HOW TO SPEAK",
+                "narration": "He was ready to interrogate the kid—until the teacher smiled at him and the undefeated Boss turned bright red.",
+            },
+            {
+                "beat_type": "CLIFFHANGER",
+                "headline": f"FOLLOW FOR PART {next_part} · COMMENT {keyword}",
+                "subtext": "WATCH FULL EPISODES ON YOUTUBE IN FIRST COMMENT",
+                "narration": f"Wait until you see what his daughter whispered next. Follow for Part {next_part} and comment {keyword} for the full video link!",
+            },
+        ]
+        caption = (
+            f"🎬 [{short_title} — Part {part_number}/{total_parts}] "
+            f"Every overprotective Mafia Dad's worst nightmare at the playground! "
+            f"Follow for Part {next_part} & grab the full season link in the first comment."
+        )
+        hashtags = ["anime", "animeedits", "aianime", "wholesomeanime", "animereels", f"part{part_number}"]
+    else:
+        words = [w.upper() for w in re.findall(r"[A-Za-z0-9']+", clean_topic) if len(w) > 2]
+        focus = " ".join(words[:4]) or "THE BOSS'S RULE"
+        beats = [
+            {
+                "beat_type": "HOOK",
+                "headline": f"PART {part_number}/{total_parts}: {focus[:22]}",
+                "subtext": short_title[:44].upper(),
+                "narration": f"Part {part_number} of {total_parts}. {clean_topic}. Nobody believed the rumors until the doors were breached.",
+            },
+            {
+                "beat_type": "TENSION",
+                "headline": "THE ENTIRE SYNDICATE FROZE",
+                "subtext": "THEY CROSSED THE ONE LINE HE SWORE TO PROTECT",
+                "narration": "They thought outnumbering him ten-to-one was enough, unaware they had just broken his single unbreakable rule.",
+            },
+            {
+                "beat_type": "TWIST",
+                "headline": "THE TRUE POWER OF FAMILY",
+                "subtext": "SAFER IN PRISON THAN FACING HIM TONIGHT",
+                "narration": "With a single glance, the entire room realized they were safer in a maximum-security cell than standing in his way.",
+            },
+            {
+                "beat_type": "CLIFFHANGER",
+                "headline": f"FOLLOW FOR PART {next_part} · COMMENT {keyword}",
+                "subtext": "FULL EPISODE LINK IN BIO & FIRST COMMENT",
+                "narration": f"Just as the final door opened—cut to black. Follow for Part {next_part} and comment {keyword} for the full episode!",
+            },
+        ]
+        caption = (
+            f"🎬 [{short_title} — Part {part_number}/{total_parts}] "
+            f"Time to show them what family is really about. "
+            f"Follow for Part {next_part} & check the first comment for the full series link!"
+        )
+        hashtags = ["anime", "animeedits", "aianime", "manhwa", "animereels", f"part{part_number}"]
+
+    return {
+        "title": short_title,
+        "caption": caption,
+        "hashtags": hashtags,
+        "beats": beats,
     }
 
 
@@ -250,6 +326,9 @@ def render_anime_reel_project(
     keyword: str = "LINK",
     voice: str = "en-US-ChristopherNeural",
     project_id: str | None = None,
+    series: str = "Overprotective Mafia Boss Dad & Daughter",
+    viewer_signal: str = "Derived from top channel engagement & viewer comments",
+    approval_status: str = "awaiting_approval",
 ) -> dict[str, Any]:
     """Render a complete 9:16 Anime Hook-to-Suspense Reel MP4 into projects/<project_id>/renders/final.mp4."""
     slug = re.sub(r"[^a-z0-9]+", "-", topic.lower()).strip("-")[:28] or "anime-ep"
@@ -274,6 +353,9 @@ def render_anime_reel_project(
             {
                 "project_id": pid,
                 "title": f"[Part {part_number}/{total_parts}] {script_data['title']}",
+                "series": series,
+                "viewer_signal": viewer_signal,
+                "approval_status": approval_status,
                 "pipeline_type": "animation",
                 "style": "anime-ghibli",
                 "created_at": datetime.now(timezone.utc).isoformat(),
