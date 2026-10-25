@@ -259,13 +259,78 @@
       if (payload.error) {
         return { discovered: false, reason: payload.error.message || JSON.stringify(payload.error) };
       }
-      const pages = payload.data || [];
-      if (!pages.length) {
+      const pagesMap = new Map();
+      for (const p of (payload.data || [])) {
+        pagesMap.set(String(p.id), p);
+      }
+
+      const directIgMap = new Map();
+      let tokenScopes = [];
+      let granularScopes = [];
+      try {
+        const dbgUrl = `https://graph.facebook.com/v25.0/debug_token?input_token=${encodeURIComponent(fbToken)}&access_token=${encodeURIComponent(fbToken)}`;
+        const dbgResp = await fetch(dbgUrl);
+        const dbgJson = await dbgResp.json();
+        const dbgData = dbgJson.data || {};
+        tokenScopes = dbgData.scopes || [];
+        granularScopes = dbgData.granular_scopes || [];
+
+        const pageTargetIds = new Set();
+        const igTargetIds = new Set();
+        for (const gs of granularScopes) {
+          const scope = gs.scope || '';
+          for (const tid of (gs.target_ids || [])) {
+            if (scope.startsWith('pages_')) pageTargetIds.add(String(tid));
+            if (scope.startsWith('instagram_')) igTargetIds.add(String(tid));
+          }
+        }
+
+        for (const pid of pageTargetIds) {
+          if (!pagesMap.has(pid)) {
+            try {
+              const pResp = await fetch(`https://graph.facebook.com/v25.0/${pid}?fields=${encodeURIComponent(fields)}&access_token=${encodeURIComponent(fbToken)}`);
+              const pJson = await pResp.json();
+              if (pJson && pJson.id) pagesMap.set(String(pJson.id), pJson);
+            } catch (e) {}
+          }
+        }
+
+        for (const igId of igTargetIds) {
+          try {
+            const igResp = await fetch(`https://graph.facebook.com/v25.0/${igId}?fields=id,username,name,followers_count&access_token=${encodeURIComponent(fbToken)}`);
+            const igJson = await igResp.json();
+            if (igJson && igJson.id) {
+              directIgMap.set(String(igJson.id), igJson);
+            } else {
+              directIgMap.set(String(igId), { id: String(igId), username: '' });
+            }
+          } catch (e) {
+            directIgMap.set(String(igId), { id: String(igId), username: '' });
+          }
+        }
+      } catch (e) {}
+
+      try {
+        const bizUrl = `https://graph.facebook.com/v25.0/me/businesses?fields=${encodeURIComponent('id,name,owned_pages{' + fields + '},client_pages{' + fields + '}')}&access_token=${encodeURIComponent(fbToken)}`;
+        const bizResp = await fetch(bizUrl);
+        const bizJson = await bizResp.json();
+        for (const b of (bizJson.data || [])) {
+          for (const p of ((b.owned_pages && b.owned_pages.data) || [])) {
+            if (!pagesMap.has(String(p.id))) pagesMap.set(String(p.id), p);
+          }
+          for (const p of ((b.client_pages && b.client_pages.data) || [])) {
+            if (!pagesMap.has(String(p.id))) pagesMap.set(String(p.id), p);
+          }
+        }
+      } catch (e) {}
+
+      const pages = Array.from(pagesMap.values());
+      if (!pages.length && !directIgMap.size) {
         return { discovered: false, reason: 'No Facebook Pages returned on this token. Make sure pages_show_list and business_management are granted.' };
       }
       const allPages = [];
       const allIg = [];
-      let chosenFb = pages[0];
+      let chosenFb = pages[0] || { id: '', name: '' };
       let chosenIgPage = null;
 
       for (const p of pages) {
