@@ -49,6 +49,41 @@
 
 ---
 
+## 🚀 What Was Achieved in This Session (`SriAkhilSJ/Marketing-Team`)
+
+This repository integrates **[calesthio/OpenMontage](https://github.com/calesthio/OpenMontage)** with **[geraldnguyen/social-media-posters](https://github.com/geraldnguyen/social-media-posters)** and a custom **Pure Black Monochrome AI Niche Content Creator & Meta Graph v25.0 Command Center** (`backlot/` + `tools/video/` + `tools/publishers/`).
+
+### 1. Full OpenMontage + `social-media-posters` Integration
+- **Replaced Legacy Codebase with OpenMontage**: Cloned the full `calesthio/OpenMontage` agentic video production system (`pipelines/`, `skills/`, `tools/`, `backlot/`).
+- **Vendored `geraldnguyen/social-media-posters` (`social_media_posters/`)**: Installed the unified `social` CLI (`social_cli`) and added `tools/publishers/social_media_publisher.py` (`SocialMediaPublisher`) + `.github/workflows/social-media-autopost.yml` for automated Instagram Reels + Facebook Page video publishing and first-comment monetization funnels.
+
+### 2. Single Facebook Token → Automatic Linked Instagram & Multi-Channel Discovery
+- **Browser-to-Meta Graph API v25.0 Bridge (`backlot/ui/index.html` & `backlot/ui/creator_audit.js`)**:
+  - Uses `/v25.0/debug_token` (`granular_scopes`), `/v25.0/me/accounts`, and `/v25.0/{page_id}?fields=instagram_business_account,connected_instagram_account` to automatically discover all Facebook Pages and their linked Instagram Business accounts from a single `FB_ACCESS_TOKEN`.
+  - Discovered and paired both live creator channels:
+    1. **Facebook Page `AnimeEdits` (`1316616991525561`)** ↔ **Instagram `@naruto.uzumaki8067` (`17841445027584531`)**
+    2. **Facebook Page `Memes.com` (`1256219754250223`)** ↔ **Instagram `@memes.com409559` (`17841438515530864`)**
+
+### 3. Live Creator Channel Telemetry & Niche Intelligence (`.backlot/profile_analytics.json` & `tools/video/niche_creator_engine.py`)
+- **Audited 25 Facebook Reels (`AnimeEdits`) & 25 Instagram Reels (`@naruto.uzumaki8067`)**:
+  - **Facebook `AnimeEdits`**: **22,691 followers**, **3,274 talking about this**, **1,052,774 total views** across the last 25 Reels (**42,111 avg views/reel**, peaking at **139,429 views** on `4621308234820038` and **125,053 views** on `2922166034798380`), **30,385 likes**, and **742+ shares**.
+  - **Instagram `@naruto.uzumaki8067`**: **131 followers**, **120 media posts**, **323 likes** across the last 25 Reels (peaking at **75 likes** on `DcmIu4UyVYJ` and **66 likes** on `Dc2l-T4igar`), bio link `https://youtube.com/@strawhat-b2j`.
+- **4 Core Growth Bottlenecks Diagnosed Automatically**:
+  1. **True Channel Niche**: Mined 128 Facebook comments and 11 Instagram comments to identify the audience's favorite serialized universe: *Overprotective Mafia Boss Dad, His Little Daughter, Lester & Possessed Mr. Cat*.
+  2. **Off-Niche Copy-Paste Caption Bug**: Detected that 21/25 Reels carried a Japanese `@gracieabrams`/`@dojacat`/`@bts.bighitofficial` concert caption and 4/25 carried an English `#Taehyung` Vogue World caption.
+  3. **Unanswered Viewer Funnel Demand**: Viewers on 73K–139K view Reels were commenting *"There’s no link!!!!!!"*, *"where can I watch the full season"*, *"Title pls"*, and *"Next part plz asap"*.
+  4. **Optimal Duration Sweet Spot**: 50s–95s story episodes averaged **60K–139K views** on Facebook vs. **2.7K–4.8K views** on `<35s` clips.
+
+### 4. Pure Black Monochrome UI Redesign, Approval Queue & Whole-Profile Optimizer
+- **Pure Black Monochrome Creator Studio (`backlot/ui/index.html`, `backlot/ui/board.css`, `backlot/ui/board.js`, `backlot/ui/library.js`)**:
+  - Eliminated all raw `JSON.stringify` / `<pre>` dumps across both `/` and `/p/{project_id}`.
+  - Added a **Human-in-the-Loop Reel Approval Queue** (`✓ Accept & Publish to IG + FB`, `▶ Load in Monitor`, `✕ Reject`) and **Data-Backed Episode Blueprints**.
+  - Built a **1-Click Whole-Profile Strength & Caption Repair Engine** (`GET /api/studio/creator-intelligence`, `POST /api/studio/creator/save-upgrade`) to update the Facebook Page `about`/`website`, bulk-replace off-niche Japanese/Vogue video descriptions with serialized Anime captions, post first-comment YouTube funnel links (`https://youtube.com/@strawhat-b2j`), and generate an upgraded Instagram biography.
+- **Note on Sandbox Video Rendering (`tools/video/anime_reel_generator.py`)**:
+  - Inside a CPU-only sandbox without external video-diffusion API keys (Veo/Kling/Runway/Sora), local MP4 generation relies on 9:16 keyframe illustrations (`assets/anime_scenes/`) composited with FFmpeg/Pillow camera motion and Edge-TTS narration, which looks like an animated motion-comic/slideshow rather than full frame-by-frame character animation. Connecting an Image-to-Video model provider in OpenMontage (`docs/PROVIDERS.md`) upgrades the `assets` stage from keyframe motion to full generative video clips.
+
+---
+
 Turn your AI coding assistant into a full video production studio. Describe what you want in plain language — your agent handles research, scripting, asset generation, editing, and final composition.
 
 **Important distinction:** OpenMontage can make image-based videos, but it can also make a real **video video** for free/open-source workflows: the agent builds a corpus from free stock footage and open archives, retrieves actual motion clips, edits them into a timeline, and renders a finished piece. That is not the usual "animate a handful of stills and call it video" trick.
