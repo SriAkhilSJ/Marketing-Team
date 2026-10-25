@@ -208,6 +208,8 @@ And when a run is done, hit **▶ REPLAY RUN** — the whole production replays 
 
 ### Install & Run
 
+> **Full walkthrough, verification gates and a copy-paste prompt for your desktop agent: [`SETUP.md`](SETUP.md).**
+
 ```bash
 git clone https://github.com/calesthio/OpenMontage.git
 cd OpenMontage
