@@ -311,6 +311,7 @@ def create_app() -> FastAPI:
         env_file.write_text("\n".join(new_lines) + "\n", encoding="utf-8")
 
     META_CACHE_FILE = REPO_ROOT / ".backlot" / "meta_discovered.json"
+    ANALYTICS_CACHE_FILE = REPO_ROOT / ".backlot" / "profile_analytics.json"
 
     def _build_studio_status() -> dict:
         fb_token = (_os.environ.get("FB_ACCESS_TOKEN") or _os.environ.get("META_ACCESS_TOKEN") or "").strip()
@@ -360,6 +361,22 @@ def create_app() -> FastAPI:
         if env_updates:
             await asyncio.to_thread(_update_dotenv_file, env_updates)
         return await asyncio.to_thread(_build_studio_status)
+
+    @app.get("/api/studio/analytics")
+    async def studio_get_analytics() -> dict:
+        if ANALYTICS_CACHE_FILE.is_file():
+            try:
+                return json.loads(ANALYTICS_CACHE_FILE.read_text(encoding="utf-8"))
+            except Exception as exc:
+                return {"loaded": False, "error": str(exc)}
+        return {"loaded": False}
+
+    @app.post("/api/studio/save-analytics")
+    async def studio_save_analytics(request: Request) -> dict:
+        body = await request.json()
+        ANALYTICS_CACHE_FILE.parent.mkdir(parents=True, exist_ok=True)
+        ANALYTICS_CACHE_FILE.write_text(json.dumps(body, indent=2), encoding="utf-8")
+        return {"ok": True, "saved_at": time.time()}
 
     @app.post("/api/studio/save-env")
     async def studio_save_env(request: Request) -> dict:

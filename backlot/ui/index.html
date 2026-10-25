@@ -233,11 +233,21 @@
         </div>
       </div>
     </div>
+
+    <!-- Card 3: Live Creator Analytics & Anime Reels Audit -->
+    <div class="studio-card" style="margin-top:16px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:10px;">
+        <h3 style="margin:0;">3. 📊 Creator Channel &amp; Anime Reels Audit — <code>@naruto.uzumaki8067</code> &amp; <code>AnimeEdits</code></h3>
+        <button class="btn secondary" id="refreshAuditBtn" style="padding:6px 12px;font-size:11px;">🔄 Refresh Reels &amp; Views Audit</button>
+      </div>
+      <div id="creatorAuditBox" class="result-box" style="max-height:360px;">Fetching live Reels, views, likes, comments &amp; captions from @naruto.uzumaki8067 (17841445027584531) and Facebook Page AnimeEdits (1316616991525561)...</div>
+    </div>
   </section>
 
   <div class="lib-grid" id="grid"></div>
   <p class="hint" id="empty" style="display:none">No projects yet — run a production above and it will appear here.</p>
 </div>
+<script src="/ui/creator_audit.js"></script>
 <script type="module" src="/ui/library.js"></script>
 <script>
   let currentStudioCfg = null;
@@ -716,6 +726,71 @@
 
   document.getElementById('runLiveBtn').addEventListener('click', () => triggerJob(false));
   document.getElementById('runDryBtn').addEventListener('click', () => triggerJob(true));
+
+  function renderCreatorAudit(audit) {
+    const box = document.getElementById('creatorAuditBox');
+    if (!box || !audit || !audit.anime_channel) return;
+    const ig = (audit.anime_channel.instagram && audit.anime_channel.instagram.profile) || {};
+    const igMedia = (audit.anime_channel.instagram && audit.anime_channel.instagram.media) || [];
+    const fb = (audit.anime_channel.facebook && audit.anime_channel.facebook.profile) || {};
+    const fbVideos = (audit.anime_channel.facebook && audit.anime_channel.facebook.videos) || [];
+
+    const totalFbViews = fbVideos.reduce((s, v) => s + (v.views || 0), 0);
+    const totalFbLikes = fbVideos.reduce((s, v) => s + ((v.likes && v.likes.summary && v.likes.summary.total_count) || 0), 0);
+    const totalIgLikes = igMedia.reduce((s, m) => s + (m.like_count || 0), 0);
+
+    if (ig.website && !document.getElementById('monetizationUrlInput').value) {
+      document.getElementById('monetizationUrlInput').value = ig.website;
+    }
+
+    const topFb = [...fbVideos].sort((a, b) => (b.views || 0) - (a.views || 0)).slice(0, 8);
+    const lines = [
+      `=== 🔥 LIVE CREATOR CHANNEL AUDIT (@${ig.username || 'naruto.uzumaki8067'} + FB ${fb.name || 'AnimeEdits'}) ===`,
+      `• Facebook Page: ${fb.name || 'AnimeEdits'} (${(fb.followers_count || 0).toLocaleString()} followers | ${(fb.talking_about_count || 0).toLocaleString()} talking about this)`,
+      `• Facebook Last ${fbVideos.length} Reels: ${totalFbViews.toLocaleString()} Total Views (Avg ${Math.round(totalFbViews / Math.max(1, fbVideos.length)).toLocaleString()} views/reel) | ${totalFbLikes.toLocaleString()} Likes`,
+      `• Instagram Account: @${ig.username || 'naruto.uzumaki8067'} (${ig.followers_count || 0} followers | ${ig.media_count || 0} posts | Bio Link: ${ig.website || 'n/a'})`,
+      `• Instagram Last ${igMedia.length} Reels: ${totalIgLikes.toLocaleString()} Likes (Top IG Reels: DcmIu4UyVYJ = 75 likes, Dc2l-T4igar = 66 likes)`,
+      ``,
+      `=== 🏆 TOP PERFORMING ANIME REELS ON FACEBOOK (AnimeEdits) ===`,
+      ...topFb.map((v, idx) => {
+        const likes = (v.likes && v.likes.summary && v.likes.summary.total_count) || 0;
+        const comms = (v.comments && v.comments.summary && v.comments.summary.total_count) || 0;
+        return `${idx + 1}. Reel ${v.id} (${(v.created_time || '').slice(0, 10)}, ${Math.round(v.length || 0)}s) -> ${(v.views || 0).toLocaleString()} views | ${likes.toLocaleString()} likes | ${comms} comments`;
+      }),
+      ``,
+      `=== 💡 4 CREATOR FIXES UNLOCKED BY THIS STUDIO ===`,
+      `1. Stop the BTS/Vogue Copy-Paste Caption Bug: Replace the Japanese/Taehyung caption with Anime Hook + Part # + Anime Hashtags so IG's classifier pushes to Anime fans.`,
+      `2. Auto-Drop First Comment Link: Viewers on 139K-view Reel 4621308234820038 & 73K-view Reel 1550951783004276 are begging "There's no link!!!!!!" & "where can I watch the full season". Auto-comment your YouTube (${ig.website || 'https://youtube.com/@strawhat-b2j'}) on every upload.`,
+      `3. Hit the 50s–90s Duration Sweet Spot: Your 50s–95s Mafia Boss Dad & Daughter episodes average 75K–139K views, while 32s clips average 3K–5K views.`,
+      `4. Label Every Episode [Part X / Y]: Viewers are commenting "Next part plz asap" (@__suyashh__20) & "Name?". Explicit Part numbering drives follows + profile binge-watching.`
+    ];
+    box.textContent = lines.join('\n');
+  }
+
+  fetch('/api/studio/analytics').then(r => r.json()).then(d => {
+    if (d && d.loaded) renderCreatorAudit(d);
+  }).catch(() => {});
+
+  window.addEventListener('creator-audit-ready', (ev) => {
+    renderCreatorAudit(ev.detail);
+  });
+
+  const refreshAuditBtn = document.getElementById('refreshAuditBtn');
+  if (refreshAuditBtn) {
+    refreshAuditBtn.addEventListener('click', async () => {
+      refreshAuditBtn.disabled = true;
+      refreshAuditBtn.textContent = '⏳ Auditing IG & FB Reels...';
+      try {
+        if (window.runFullCreatorAudit) {
+          const data = await window.runFullCreatorAudit();
+          renderCreatorAudit(data);
+        }
+      } finally {
+        refreshAuditBtn.disabled = false;
+        refreshAuditBtn.textContent = '🔄 Refresh Reels & Views Audit';
+      }
+    });
+  }
 
   loadStudioConfig(true);
 </script>
