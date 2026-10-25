@@ -513,7 +513,7 @@
       document.getElementById('fbTokenInput').value = '';
       document.getElementById('llmKeyInput').value = '';
       if (cfg.fb_access_token) {
-        await discoverViaBrowserGraphApi(cfg.fb_access_token, fbPage || cfg.fb_page_id);
+        await discoverViaBrowserGraphApi(cfg.fb_access_token, '');
       }
       await loadStudioConfig(false);
     } finally {
