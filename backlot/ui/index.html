@@ -165,8 +165,8 @@
             </select>
           </div>
           <div class="field">
-            <label>Linked Instagram Account</label>
-            <input type="text" id="igAccountDisplay" placeholder="Auto-discovering @username..." readonly>
+            <label>Linked Instagram Account (Auto-Discovered or Enter IG User ID)</label>
+            <input type="text" id="igAccountDisplay" placeholder="Auto-discovering @username or paste IG_USER_ID...">
           </div>
         </div>
         <div style="display:grid;grid-template-columns:2fr 1fr;gap:8px;">
@@ -245,7 +245,15 @@
   async function discoverViaBrowserGraphApi(fbToken, preferredFbPageId) {
     if (!fbToken) return null;
     try {
-      const url = `https://graph.facebook.com/v25.0/me/accounts?fields=id,name,access_token,instagram_business_account{id,username,name,followers_count}&access_token=${encodeURIComponent(fbToken)}`;
+      const fields = [
+        'id',
+        'name',
+        'access_token',
+        'instagram_business_account{id,username,name,followers_count}',
+        'connected_instagram_account{id,username,name,followers_count}',
+        'instagram_accounts{id,username}',
+      ].join(',');
+      const url = `https://graph.facebook.com/v25.0/me/accounts?fields=${encodeURIComponent(fields)}&limit=50&access_token=${encodeURIComponent(fbToken)}`;
       const r = await fetch(url);
       const payload = await r.json();
       if (payload.error) {
@@ -253,7 +261,7 @@
       }
       const pages = payload.data || [];
       if (!pages.length) {
-        return { discovered: false, reason: 'No Facebook Pages returned on this token. Make sure pages_show_list is granted.' };
+        return { discovered: false, reason: 'No Facebook Pages returned on this token. Make sure pages_show_list and business_management are granted.' };
       }
       const allPages = [];
       const allIg = [];
@@ -261,7 +269,11 @@
       let chosenIgPage = null;
 
       for (const p of pages) {
-        const ig = p.instagram_business_account || {};
+        const igBiz = p.instagram_business_account || {};
+        const igConn = p.connected_instagram_account || {};
+        const igListFirst = (p.instagram_accounts && p.instagram_accounts.data && p.instagram_accounts.data[0]) || {};
+        const ig = igBiz.id ? igBiz : (igConn.id ? igConn : igListFirst);
+
         allPages.push({
           fb_page_id: p.id,
           fb_page_name: p.name,
@@ -288,7 +300,11 @@
       if (!preferredFbPageId && chosenIgPage) {
         chosenFb = chosenIgPage;
       }
-      const igAcct = (chosenIgPage && chosenIgPage.instagram_business_account) || {};
+      const chosenIgBiz = (chosenIgPage && chosenIgPage.instagram_business_account) || {};
+      const chosenIgConn = (chosenIgPage && chosenIgPage.connected_instagram_account) || {};
+      const chosenIgList = (chosenIgPage && chosenIgPage.instagram_accounts && chosenIgPage.instagram_accounts.data && chosenIgPage.instagram_accounts.data[0]) || {};
+      const igAcct = chosenIgBiz.id ? chosenIgBiz : (chosenIgConn.id ? chosenIgConn : chosenIgList);
+
       const discovered = {
         discovered: true,
         fb_page_id: chosenFb.id,
@@ -337,7 +353,7 @@
       if (cfg.openai_model) document.getElementById('llmModelInput').value = cfg.openai_model;
 
       let disc = cfg.discovered || {};
-      if (runBrowserDiscovery && cfg.fb_access_token && (!disc.discovered || !disc.all_pages || !disc.all_pages.length)) {
+      if (runBrowserDiscovery && cfg.fb_access_token) {
         const fresh = await discoverViaBrowserGraphApi(cfg.fb_access_token, cfg.fb_page_id);
         if (fresh) {
           disc = fresh;
