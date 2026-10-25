@@ -6,44 +6,47 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;450;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Courier+Prime:ital,wght@0,400;0,700;1,400&display=swap');
 
 :root {
-  --bg: #0a0a0c;
-  --surface: #101013;
-  --surface-2: #16161a;
-  --surface-3: #1c1c21;
-  --border: #232329;
-  --border-soft: #1a1a1f;
-  --text: #ececef;
-  --text-2: #a0a0a9;
-  --text-3: #5f5f68;
-  --amber: #f0a83c;
-  --amber-dim: rgba(240, 168, 60, 0.14);
-  --green: #4fc283;
-  --green-dim: rgba(79, 194, 131, 0.12);
-  --red: #e5544b;
-  --red-dim: rgba(229, 84, 75, 0.12);
-  --blue: #6aa1ff;
-  --cream: #f2e9d5;
-  --cream-shade: #e5d9be;
-  --cream-ink: #29231a;
-  --cream-ink-2: #6b5f4a;
-  --bg-vignette: radial-gradient(1200px 600px at 50% -100px, #111116 0%, var(--bg) 70%);
-  --grain-opacity: .035;
-  --scroll-thumb: #26262e;
-  --scroll-thumb-hover: #34343e;
-  --clapper-a: #2c2c33;
-  --clapper-b: #101013;
-  --script-shadow: 0 18px 50px -18px rgba(0,0,0,.85), 0 1px 0 rgba(255,255,255,.06) inset;
-  --modal-backdrop: rgba(5,5,7,.82);
+  --bg: #000000;
+  --bg-2: #09090b;
+  --bg-3: #121215;
+  --surface: #09090b;
+  --surface-2: #121215;
+  --surface-3: #18181b;
+  --border: #27272a;
+  --border-2: #3f3f46;
+  --border-soft: #18181b;
+  --text: #fafafa;
+  --text-2: #a1a1aa;
+  --text-3: #71717a;
+  --amber: #e4e4e7;
+  --amber-dim: rgba(255, 255, 255, 0.08);
+  --green: #d4d4d8;
+  --green-dim: rgba(255, 255, 255, 0.07);
+  --red: #f87171;
+  --red-dim: rgba(248, 113, 113, 0.12);
+  --blue: #d4d4d8;
+  --cream: #0c0c0f;
+  --cream-shade: #27272a;
+  --cream-ink: #fafafa;
+  --cream-ink-2: #a1a1aa;
+  --bg-vignette: radial-gradient(1200px 600px at 50% -100px, #09090b 0%, #000000 75%);
+  --grain-opacity: .015;
+  --scroll-thumb: #27272a;
+  --scroll-thumb-hover: #3f3f46;
+  --clapper-a: #27272a;
+  --clapper-b: #09090b;
+  --script-shadow: 0 18px 50px -18px rgba(0,0,0,.95), 0 0 0 1px #27272a inset;
+  --modal-backdrop: rgba(0,0,0,.88);
   --media-bg: #000;
-  --textcard-bg: #0d0d10;
-  --badge-bg: rgba(8,8,10,.72);
+  --textcard-bg: #09090b;
+  --badge-bg: rgba(9,9,11,.85);
   --sans: 'Inter', -apple-system, sans-serif;
   --mono: 'JetBrains Mono', ui-monospace, monospace;
-  --screenplay: 'Courier Prime', 'Courier New', monospace;
+  --screenplay: 'Inter', -apple-system, sans-serif;
 
   /* Global type scale. Every font-size is calc(<px> * var(--fs-scale)), so this
      one number scales all text proportionally for readability. 1 = original. */
-  --fs-scale: 1.16;
+  --fs-scale: 1.08;
 }
 
 :root[data-theme="light"] {

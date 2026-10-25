@@ -92,6 +92,13 @@
         fetchFbPageAudit('1256219754250223', memesPageToken),
       ]);
 
+      const hasRealData =
+        (igAnime && Array.isArray(igAnime.media) && igAnime.media.length > 0) ||
+        (fbAnime && Array.isArray(fbAnime.videos) && fbAnime.videos.length > 0);
+      if (!hasRealData) {
+        return null;
+      }
+
       const payload = {
         loaded: true,
         fetched_at: new Date().toISOString(),

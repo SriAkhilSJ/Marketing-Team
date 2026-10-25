@@ -90,9 +90,13 @@ function renderSlate(s) {
   }
 
   return el("header", { class: "slate" },
-    el("div", { class: "clapper" }),
+    el("a", {
+      href: "/",
+      class: "chip",
+      style: "text-decoration:none;color:var(--text);border-color:var(--border-2);background:var(--bg-3);font-weight:600;padding:6px 12px",
+    }, "← Creator Studio"),
     el("div", {},
-      el("a", { class: "wordmark", href: "/", style: "text-decoration:none" }, "Backlot"),
+      el("a", { class: "wordmark", href: "/", style: "text-decoration:none" }, "OpenMontage · Backlot"),
       el("h1", {}, s.title),
     ),
     ...chips,
@@ -199,6 +203,73 @@ function reviewSummaryText(review) {
   ].filter(Boolean).join(" · ");
 }
 
+function renderArtifactSummary(name, artifact) {
+  const wrap = el("div", {
+    style: "display:grid;gap:10px;background:var(--bg-3);border:1px solid var(--border);border-radius:10px;padding:14px;margin-top:6px",
+  });
+  if (name === "script" && Array.isArray(artifact.beats || artifact.sections)) {
+    const items = artifact.beats || artifact.sections || [];
+    wrap.append(el("div", { style: "font-weight:700;font-size:13px;color:var(--text)" },
+      `${artifact.title || "Episode Script"} · ${items.length} Beats · ${fmtDuration(artifact.total_duration_seconds || 12)}`));
+    for (const b of items) {
+      wrap.append(el("div", {
+        style: "padding:10px 12px;background:var(--bg-2);border:1px solid var(--border);border-radius:8px",
+      },
+        el("div", { style: "font-family:var(--mono);font-size:10.5px;color:var(--amber);letter-spacing:.08em;text-transform:uppercase" },
+          b.beat_type || b.label || b.id || "BEAT"),
+        el("div", { style: "font-weight:600;color:var(--text);margin-top:2px" }, b.headline || b.text || ""),
+        b.narration ? el("div", { style: "font-size:12px;color:var(--text-2);margin-top:4px" }, `“${b.narration}”`) : null,
+      ));
+    }
+    return wrap;
+  }
+  if (name === "scene_plan" && Array.isArray(artifact.scenes)) {
+    wrap.append(el("div", { style: "font-weight:700;font-size:13px;color:var(--text)" },
+      `${artifact.scenes.length} Planned Scenes · Style: ${artifact.style_playbook || "anime-ghibli"}`));
+    for (const sc of artifact.scenes) {
+      wrap.append(el("div", {
+        style: "display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:var(--bg-2);border:1px solid var(--border);border-radius:8px;gap:12px",
+      },
+        el("div", {},
+          el("span", { style: "font-family:var(--mono);font-size:11px;color:var(--amber);margin-right:8px" }, String(sc.id || "").toUpperCase()),
+          el("span", { style: "font-size:12.5px;color:var(--text)" }, sc.description || sc.shot_intent || "Scene"),
+        ),
+        el("span", { style: "font-family:var(--mono);font-size:11px;color:var(--text-3);white-space:nowrap" },
+          `${fmtDuration(sc.start_seconds)} – ${fmtDuration(sc.end_seconds)}`),
+      ));
+    }
+    return wrap;
+  }
+  if (name === "asset_manifest" && Array.isArray(artifact.assets)) {
+    wrap.append(el("div", { style: "font-weight:700;font-size:13px;color:var(--text)" },
+      `${artifact.assets.length} Generated Visual & Audio Assets`));
+    for (const a of artifact.assets) {
+      wrap.append(el("div", {
+        style: "display:flex;justify-content:space-between;padding:8px 12px;background:var(--bg-2);border:1px solid var(--border);border-radius:8px;font-size:12px",
+      },
+        el("span", { style: "color:var(--text)" }, `${a.id || a.type} → ${a.path || ""}`),
+        el("span", { style: "font-family:var(--mono);color:var(--text-3)" }, a.model || a.source_tool || "ready"),
+      ));
+    }
+    return wrap;
+  }
+  const entries = Object.entries(artifact || {}).filter(([k]) => !k.startsWith("_"));
+  for (const [k, v] of entries.slice(0, 12)) {
+    const valText = Array.isArray(v)
+      ? `${v.length} items`
+      : (v && typeof v === "object")
+        ? Object.entries(v).map(([sk, sv]) => `${sk}: ${sv}`).join(" · ")
+        : String(v ?? "—");
+    wrap.append(el("div", {
+      style: "display:flex;justify-content:space-between;gap:16px;padding:6px 10px;background:var(--bg-2);border:1px solid var(--border);border-radius:6px;font-size:12px",
+    },
+      el("span", { style: "font-family:var(--mono);color:var(--text-3);text-transform:uppercase;font-size:10.5px" }, k.replace(/_/g, " ")),
+      el("span", { style: "color:var(--text);text-align:right" }, valText),
+    ));
+  }
+  return wrap;
+}
+
 function renderDrawer(s) {
   if (!selectedStage) return null;
   const st = s.stages.find((x) => x.name === selectedStage);
@@ -224,13 +295,13 @@ function renderDrawer(s) {
     if (!artifact) continue;
     shown = true;
     body.append(
-      el("div", { class: "d-cat", style: "font-family:var(--mono);font-size:calc(9.5px * var(--fs-scale));color:var(--text-3);letter-spacing:.1em;text-transform:uppercase;margin:6px 0 4px" }, name),
-      el("pre", {}, JSON.stringify(artifact, null, 2)),
+      el("div", { class: "d-cat", style: "font-family:var(--mono);font-size:calc(9.5px * var(--fs-scale));color:var(--text-3);letter-spacing:.1em;text-transform:uppercase;margin:6px 0 4px" }, name.replace(/_/g, " ")),
+      renderArtifactSummary(name, artifact),
     );
   }
   if (!shown) {
     body.append(el("div", { class: "hint" },
-      st.status === "pending" ? "This stage hasn't run yet." : "No canonical artifact found on disk for this stage."));
+      st.status === "pending" ? "This stage hasn't run yet." : "Stage completed cleanly."));
   }
 
   return el("div", { class: "drawer" },

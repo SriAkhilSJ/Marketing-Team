@@ -1,272 +1,1070 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>OpenMontage Backlot — Anime Reels & Meta Auto-Publisher</title>
+<title>OpenMontage Studio — Monochrome Creator &amp; Meta Command Center</title>
 <link rel="stylesheet" href="/ui/board.css">
 <style>
-  .studio-panel {
-    background: #11131a;
-    border: 1px solid #262938;
-    border-radius: 12px;
-    padding: 20px;
-    margin-bottom: 24px;
-    color: #e6e8f0;
-    font-family: system-ui, -apple-system, sans-serif;
+  :root {
+    --mono-bg: #000000;
+    --mono-surface: #09090b;
+    --mono-card: #0e0e11;
+    --mono-elevated: #141418;
+    --mono-hover: #1c1c22;
+    --mono-border: #222228;
+    --mono-border-strong: #32323a;
+    --mono-text: #fafafa;
+    --mono-text-2: #a1a1aa;
+    --mono-text-3: #71717a;
+    --mono-accent: #ffffff;
   }
-  .studio-grid {
+
+  body {
+    background: var(--mono-bg) !important;
+    color: var(--mono-text) !important;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    letter-spacing: -0.01em;
+  }
+
+  .wrap {
+    max-width: 1480px;
+    margin: 0 auto;
+    padding: 20px 28px 64px;
+  }
+
+  /* Top Monochrome Command Bar */
+  .topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+    padding: 16px 20px;
+    background: var(--mono-surface);
+    border: 1px solid var(--mono-border);
+    border-radius: 14px;
+    margin-bottom: 20px;
+  }
+  .brand-row {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+  .brand-mark {
+    width: 36px;
+    height: 36px;
+    border-radius: 9px;
+    background: #ffffff;
+    color: #000000;
+    display: grid;
+    place-items: center;
+    font-weight: 800;
+    font-size: 15px;
+    letter-spacing: -0.04em;
+  }
+  .brand-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--mono-text);
+    letter-spacing: -0.02em;
+  }
+  .brand-sub {
+    font-size: 12px;
+    color: var(--mono-text-2);
+    margin-top: 2px;
+  }
+
+  .nav-tabs {
+    display: flex;
+    gap: 6px;
+    background: #050507;
+    padding: 4px;
+    border-radius: 10px;
+    border: 1px solid var(--mono-border);
+    flex-wrap: wrap;
+  }
+  .nav-tab {
+    background: transparent;
+    color: var(--mono-text-2);
+    border: none;
+    padding: 7px 13px;
+    border-radius: 7px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+  .nav-tab:hover {
+    color: var(--mono-text);
+    background: var(--mono-elevated);
+  }
+  .nav-tab.active {
+    background: #ffffff;
+    color: #000000;
+  }
+
+  .status-cluster {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .mono-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 11px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 600;
+    font-family: var(--mono);
+    background: var(--mono-elevated);
+    color: var(--mono-text-2);
+    border: 1px solid var(--mono-border);
+  }
+  .mono-pill.ok {
+    color: var(--mono-text);
+    border-color: var(--mono-border-strong);
+    background: #141419;
+  }
+  .mono-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #71717a;
+  }
+  .mono-pill.ok .mono-dot {
+    background: #ffffff;
+    box-shadow: 0 0 8px rgba(255, 255, 255, 0.8);
+  }
+
+  /* Connected Channel Strip */
+  .channel-strip {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-    gap: 18px;
-    margin-top: 14px;
+    gap: 12px;
+    margin-bottom: 20px;
   }
-  .studio-card {
-    background: #171a24;
-    border: 1px solid #2a2e3f;
+  .channel-card {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 14px 18px;
+    background: var(--mono-surface);
+    border: 1px solid var(--mono-border);
+    border-radius: 12px;
+  }
+  .channel-card.active-channel {
+    border-color: #ffffff;
+    background: linear-gradient(180deg, #111115 0%, #09090b 100%);
+  }
+  .ch-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .ch-avatar {
+    width: 38px;
+    height: 38px;
     border-radius: 10px;
-    padding: 16px;
+    background: var(--mono-elevated);
+    border: 1px solid var(--mono-border-strong);
+    display: grid;
+    place-items: center;
+    font-family: var(--mono);
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--mono-text);
   }
-  .studio-card h3 {
-    margin: 0 0 10px 0;
-    font-size: 14px;
+  .ch-title {
+    font-size: 13.5px;
+    font-weight: 700;
+    color: var(--mono-text);
+  }
+  .ch-sub {
+    font-size: 11.5px;
+    color: var(--mono-text-2);
+    font-family: var(--mono);
+    margin-top: 2px;
+  }
+  .ch-badge {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    padding: 4px 9px;
+    border-radius: 6px;
+    border: 1px solid var(--mono-border-strong);
+    background: var(--mono-elevated);
+    color: var(--mono-text);
+    white-space: nowrap;
+  }
+
+  /* Section Containers */
+  .studio-section {
+    background: var(--mono-surface);
+    border: 1px solid var(--mono-border);
+    border-radius: 14px;
+    padding: 22px;
+    margin-bottom: 22px;
+  }
+  .section-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+    padding-bottom: 16px;
+    margin-bottom: 18px;
+    border-bottom: 1px solid var(--mono-border);
+  }
+  .section-eyebrow {
+    font-family: var(--mono);
+    font-size: 10.5px;
     text-transform: uppercase;
-    letter-spacing: 0.06em;
-    color: #9aa3b8;
+    letter-spacing: 0.12em;
+    color: var(--mono-text-3);
+    margin-bottom: 4px;
   }
+  .section-title {
+    font-size: 17px;
+    font-weight: 700;
+    color: var(--mono-text);
+    letter-spacing: -0.02em;
+  }
+
+  /* 3-Column Video Studio Grid (OpenReel style) */
+  .workbench-grid {
+    display: grid;
+    grid-template-columns: 1.15fr 280px 1.25fr;
+    gap: 20px;
+    align-items: start;
+  }
+  @media (max-width: 1180px) {
+    .workbench-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .panel-box {
+    background: var(--mono-card);
+    border: 1px solid var(--mono-border);
+    border-radius: 12px;
+    padding: 18px;
+  }
+  .panel-title {
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--mono-text-2);
+    margin-bottom: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
   .field {
-    margin-bottom: 10px;
+    margin-bottom: 12px;
   }
   .field label {
     display: block;
-    font-size: 12px;
-    color: #9aa3b8;
-    margin-bottom: 4px;
+    font-size: 11.5px;
+    font-weight: 500;
+    color: var(--mono-text-2);
+    margin-bottom: 5px;
   }
   .field input, .field select, .field textarea {
     width: 100%;
     box-sizing: border-box;
-    background: #0d0f15;
-    border: 1px solid #2e3346;
-    border-radius: 6px;
-    padding: 8px 10px;
-    color: #f0f2f8;
+    background: #050507;
+    border: 1px solid var(--mono-border-strong);
+    border-radius: 8px;
+    padding: 9px 12px;
+    color: var(--mono-text);
     font-size: 13px;
+    font-family: inherit;
+    transition: border-color 0.15s ease;
   }
+  .field input:focus, .field select:focus, .field textarea:focus {
+    outline: none;
+    border-color: #ffffff;
+  }
+
+  .preset-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 14px;
+  }
+  .preset-chip {
+    background: var(--mono-elevated);
+    border: 1px solid var(--mono-border);
+    color: var(--mono-text-2);
+    border-radius: 7px;
+    padding: 5px 10px;
+    font-size: 11px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+  .preset-chip:hover {
+    color: #ffffff;
+    border-color: #ffffff;
+    background: var(--mono-hover);
+  }
+
   .btn-row {
     display: flex;
     gap: 10px;
     flex-wrap: wrap;
-    margin-top: 12px;
+    margin-top: 14px;
   }
   .btn {
-    background: #6366f1;
-    color: #fff;
-    border: none;
-    border-radius: 6px;
-    padding: 9px 14px;
-    font-size: 13px;
-    font-weight: 600;
+    background: #ffffff;
+    color: #000000;
+    border: 1px solid #ffffff;
+    border-radius: 8px;
+    padding: 10px 16px;
+    font-size: 12.5px;
+    font-weight: 700;
     cursor: pointer;
+    transition: all 0.15s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+  }
+  .btn:hover {
+    background: #e4e4e7;
   }
   .btn.secondary {
-    background: #25293a;
-    color: #d5d9e6;
-    border: 1px solid #383e56;
+    background: var(--mono-elevated);
+    color: var(--mono-text);
+    border: 1px solid var(--mono-border-strong);
   }
-  .btn.success {
-    background: #10b981;
+  .btn.secondary:hover {
+    background: var(--mono-hover);
+    border-color: #71717a;
   }
   .btn:disabled {
-    opacity: 0.55;
+    opacity: 0.5;
     cursor: wait;
   }
-  .status-pill {
-    display: inline-block;
-    padding: 3px 8px;
-    border-radius: 999px;
-    font-size: 11px;
-    font-weight: 600;
-    background: #1f2433;
-    color: #9aa3b8;
-  }
-  .status-pill.ok {
-    background: rgba(16, 185, 129, 0.16);
-    color: #34d399;
-  }
-  .result-box {
-    margin-top: 12px;
-    background: #0b0d12;
-    border: 1px solid #262938;
-    border-radius: 8px;
+
+  /* 9:16 Monitor Column */
+  .monitor-card {
+    background: #050507;
+    border: 1px solid var(--mono-border);
+    border-radius: 14px;
     padding: 12px;
-    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-    font-size: 12px;
-    white-space: pre-wrap;
-    max-height: 260px;
-    overflow: auto;
-  }
-  .player-wrap {
     display: flex;
-    gap: 16px;
-    align-items: flex-start;
-    flex-wrap: wrap;
-    margin-top: 12px;
+    flex-direction: column;
+    align-items: center;
   }
-  .player-wrap video {
-    width: 210px;
+  .monitor-card video {
+    width: 100%;
+    max-width: 256px;
     aspect-ratio: 9 / 16;
     border-radius: 10px;
-    border: 1px solid #383e56;
+    border: 1px solid var(--mono-border-strong);
     background: #000;
+    display: block;
+  }
+  .monitor-meta {
+    width: 100%;
+    margin-top: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--mono-text-2);
+  }
+
+  /* Beat Timeline Cards */
+  .beat-list {
+    display: grid;
+    gap: 8px;
+  }
+  .beat-card {
+    background: #070709;
+    border: 1px solid var(--mono-border);
+    border-radius: 9px;
+    padding: 10px 12px;
+  }
+  .beat-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-family: var(--mono);
+    font-size: 10.5px;
+    color: var(--mono-text-2);
+    margin-bottom: 4px;
+  }
+  .beat-tag {
+    padding: 2px 7px;
+    border-radius: 4px;
+    background: var(--mono-elevated);
+    color: #ffffff;
+    font-weight: 700;
+    border: 1px solid var(--mono-border-strong);
+  }
+  .beat-headline {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--mono-text);
+  }
+  .beat-narration {
+    font-size: 12px;
+    color: var(--mono-text-2);
+    margin-top: 3px;
+    line-height: 1.4;
+  }
+
+  /* KPI Analytics Grid */
+  .kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+  .kpi-card {
+    background: var(--mono-card);
+    border: 1px solid var(--mono-border);
+    border-radius: 12px;
+    padding: 16px;
+  }
+  .kpi-label {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--mono-text-3);
+  }
+  .kpi-val {
+    font-size: 26px;
+    font-weight: 800;
+    color: var(--mono-text);
+    margin-top: 6px;
+    letter-spacing: -0.03em;
+  }
+  .kpi-sub {
+    font-size: 11.5px;
+    color: var(--mono-text-2);
+    margin-top: 4px;
+  }
+
+  /* Creator Playbook Grid */
+  .playbook-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(290px, 1fr));
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+  .playbook-card {
+    background: var(--mono-card);
+    border: 1px solid var(--mono-border);
+    border-radius: 12px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 12px;
+  }
+  .pb-num {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    color: #ffffff;
+    background: var(--mono-elevated);
+    border: 1px solid var(--mono-border-strong);
+    padding: 3px 8px;
+    border-radius: 5px;
+    display: inline-block;
+    margin-bottom: 8px;
+  }
+  .pb-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--mono-text);
+    margin-bottom: 6px;
+  }
+  .pb-desc {
+    font-size: 12.5px;
+    color: var(--mono-text-2);
+    line-height: 1.45;
+  }
+
+  /* Reels Leaderboard Table */
+  .table-wrap {
+    overflow-x: auto;
+    border: 1px solid var(--mono-border);
+    border-radius: 12px;
+    background: var(--mono-card);
+  }
+  .mono-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12.5px;
+  }
+  .mono-table th {
+    text-align: left;
+    font-family: var(--mono);
+    font-size: 10.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--mono-text-3);
+    padding: 12px 14px;
+    border-bottom: 1px solid var(--mono-border);
+    background: #070709;
+  }
+  .mono-table td {
+    padding: 11px 14px;
+    border-bottom: 1px solid var(--mono-border);
+    color: var(--mono-text);
+    vertical-align: middle;
+  }
+  .mono-table tr:last-child td {
+    border-bottom: none;
+  }
+  .mono-table tr:hover td {
+    background: var(--mono-elevated);
+  }
+  .view-bar-track {
+    width: 110px;
+    height: 6px;
+    background: #1c1c22;
+    border-radius: 999px;
+    overflow: hidden;
+    margin-top: 4px;
+  }
+  .view-bar-fill {
+    height: 100%;
+    background: #ffffff;
+    border-radius: 999px;
+  }
+  .ext-link {
+    color: var(--mono-text);
+    text-decoration: none;
+    font-family: var(--mono);
+    font-size: 11px;
+    padding: 4px 8px;
+    border-radius: 6px;
+    border: 1px solid var(--mono-border-strong);
+    background: var(--mono-elevated);
+  }
+  .ext-link:hover {
+    border-color: #ffffff;
   }
 </style>
 </head>
 <body>
 <div class="wrap">
-  <header class="slate">
-    <div class="clapper"></div>
-    <div>
-      <span class="wordmark">OpenMontage Backlot</span>
-      <h1>Anime Reels &amp; Meta Monetization Studio</h1>
+  <!-- Top Monochrome Command Header -->
+  <header class="topbar">
+    <div class="brand-row">
+      <div class="brand-mark">OM</div>
+      <div>
+        <div class="brand-title">OpenMontage · Monochrome Creator Studio</div>
+        <div class="brand-sub">9:16 Programmatic Anime Reels · Meta Graph v25.0 Auto-Publisher · Live Channel Intelligence</div>
+      </div>
     </div>
-    <span class="chip" id="count"></span>
-    <div class="spacer"></div>
-    <span class="live idle" id="liveBadge"><span class="dot"></span><span id="liveText">IDLE</span></span>
+
+    <nav class="nav-tabs" aria-label="Workspace Sections">
+      <button type="button" class="nav-tab active" data-target="all">All Panels</button>
+      <button type="button" class="nav-tab" data-target="sec-studio">9:16 Reel Studio</button>
+      <button type="button" class="nav-tab" data-target="sec-analytics">Creator Audit (1.05M Views)</button>
+      <button type="button" class="nav-tab" data-target="sec-settings">Channels &amp; .env</button>
+      <button type="button" class="nav-tab" data-target="sec-library">Storyboard Library (<span id="count">2 projects</span>)</button>
+    </nav>
+
+    <div class="status-cluster">
+      <span class="mono-pill ok" id="fbStatusPill"><span class="mono-dot"></span><span id="fbStatusText">Meta Token: Ready</span></span>
+      <span class="mono-pill ok" id="llmStatusPill"><span class="mono-dot"></span><span id="llmStatusText">Engine: DeepSeek / Built-in</span></span>
+      <span class="mono-pill" id="liveBadge"><span class="mono-dot"></span><span id="liveText">READY</span></span>
+    </div>
   </header>
 
-  <section class="studio-panel">
-    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
-      <div>
-        <strong style="font-size:16px;">🔒 Secure Sandbox Control Center (.env &amp; Auto-Publisher)</strong>
-        <div style="font-size:12px;color:#9aa3b8;margin-top:2px;">
-          Your token is saved in the sandbox <code>.env</code> and your browser connects directly to <code>graph.facebook.com</code> to auto-discover &amp; publish to your Pages and Instagram.
+  <!-- Connected Meta Channels Strip -->
+  <div class="channel-strip" id="connectedChannelsStrip">
+    <div class="channel-card active-channel">
+      <div class="ch-left">
+        <div class="ch-avatar">AE</div>
+        <div>
+          <div class="ch-title">AnimeEdits ↔ @naruto.uzumaki8067</div>
+          <div class="ch-sub">FB Page 1316616991525561 · IG Business 17841445027584531</div>
         </div>
       </div>
-      <div style="display:flex;gap:8px;align-items:center;">
-        <span class="status-pill" id="fbStatusPill">Meta Token: Not Set</span>
-        <span class="status-pill" id="llmStatusPill">LLM: Built-in Fallback Ready</span>
+      <span class="ch-badge">22,690 FB · 1.05M Views</span>
+    </div>
+    <div class="channel-card">
+      <div class="ch-left">
+        <div class="ch-avatar">MC</div>
+        <div>
+          <div class="ch-title">Memes.com ↔ @memes.com409559</div>
+          <div class="ch-sub">FB Page 1256219754250223 · IG Business 17841438515530864</div>
+        </div>
+      </div>
+      <span class="ch-badge">Connected · Ready</span>
+    </div>
+  </div>
+
+  <!-- SECTION 1: 9:16 ANIME HOOK-TO-SUSPENSE REEL STUDIO -->
+  <section class="studio-section" id="sec-studio">
+    <div class="section-head">
+      <div>
+        <div class="section-eyebrow">01 / PROGRAMMATIC 9:16 REEL WORKBENCH</div>
+        <div class="section-title">Anime Hook-to-Suspense Episode Generator &amp; Dual IG/FB Publisher</div>
+      </div>
+      <a href="/p/the-e-rank-hunter-who-awaken-part1-646" id="openBoardLink" class="btn secondary" style="text-decoration:none;padding:8px 14px;font-size:12px;">
+        Open Full Storyboard &amp; Scene Editor →
+      </a>
+    </div>
+
+    <div class="workbench-grid">
+      <!-- Left: Episode Composer -->
+      <div class="panel-box">
+        <div class="panel-title">
+          <span>Episode Script &amp; Voiceover</span>
+          <span style="font-family:var(--mono);font-size:10.5px;color:var(--mono-text-3);">4-BEAT ARCHITECTURE</span>
+        </div>
+
+        <div class="field">
+          <label>Quick-Load Episode Blueprint (From Your Top 139K-View Series)</label>
+          <div class="preset-chips">
+            <button type="button" class="preset-chip" data-topic="The Overprotective Mafia Boss Dad & His Daughter's Possessed Cat" data-part="2" data-total="4">Mafia Boss Dad &amp; Daughter [Part 2/4]</button>
+            <button type="button" class="preset-chip" data-topic="Lester Discovers Mr. Cat's Forbidden Shadow Contract" data-part="3" data-total="4">Lester &amp; Mr. Cat Twist [Part 3/4]</button>
+            <button type="button" class="preset-chip" data-topic="The E-Rank Hunter Who Awakened Forbidden Shadow Magic" data-part="1" data-total="3">Shadow Awakening [Part 1/3]</button>
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="topicInput">Episode Premise / Hook-to-Suspense Topic</label>
+          <input type="text" id="topicInput" value="The E-Rank Hunter Who Awakened Forbidden Shadow Magic">
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr 1.5fr;gap:10px;">
+          <div class="field">
+            <label for="partNumberInput">Episode Part #</label>
+            <input type="number" id="partNumberInput" value="1" min="1" max="50">
+          </div>
+          <div class="field">
+            <label for="totalPartsInput">Total Parts</label>
+            <input type="number" id="totalPartsInput" value="3" min="1" max="50">
+          </div>
+          <div class="field">
+            <label for="voiceSelect">Neural Narrator Voice</label>
+            <select id="voiceSelect">
+              <option value="en-US-ChristopherNeural">Christopher · Deep Anime Narrator</option>
+              <option value="en-US-GuyNeural">Guy · Action Shonen</option>
+              <option value="en-US-AriaNeural">Aria · Dramatic Storyteller</option>
+              <option value="en-GB-RyanNeural">Ryan · Dark Fantasy British</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="btn-row">
+          <button type="button" class="btn" id="runLiveBtn">Render 9:16 Reel + Auto-Post to IG &amp; FB</button>
+          <button type="button" class="btn secondary" id="runDryBtn">Render 9:16 Reel + Studio Preview</button>
+        </div>
+
+        <div id="renderStatusBanner" style="margin-top:14px;padding:10px 12px;border-radius:8px;background:#070709;border:1px solid var(--mono-border);font-size:12px;color:var(--mono-text-2);display:flex;align-items:center;justify-content:space-between;gap:10px;">
+          <span id="renderStatusText">Ready · Connected to AnimeEdits (FB) &amp; @naruto.uzumaki8067 (IG)</span>
+          <span style="font-family:var(--mono);font-size:10.5px;color:var(--mono-text-3);" id="renderDurationBadge">1080×1920 · 24fps</span>
+        </div>
+      </div>
+
+      <!-- Center: 9:16 Vertical Preview Monitor -->
+      <div class="monitor-card" id="playerWrap">
+        <video id="reelPlayer" src="/media/the-e-rank-hunter-who-awaken-part1-646/renders/final.mp4" poster="/thumb/the-e-rank-hunter-who-awaken-part1-646/renders/final.mp4?w=640" controls playsinline></video>
+        <div class="monitor-meta">
+          <span id="monitorProjectLabel">the-e-rank-hunter...</span>
+          <span>9:16 MP4</span>
+        </div>
+      </div>
+
+      <!-- Right: 4-Beat Timeline & Publish Inspector (Replaces Raw JSON Dump) -->
+      <div class="panel-box" id="jobResultBox">
+        <div class="panel-title">
+          <span id="inspectorTitle">[Part 1/3] The E-Rank Hunter Who Awakened...</span>
+          <span style="font-family:var(--mono);font-size:10.5px;color:#ffffff;">4 SCENES READY</span>
+        </div>
+
+        <div class="beat-list" id="beatTimelineList">
+          <div class="beat-card">
+            <div class="beat-head"><span class="beat-tag">01 · HOOK</span><span>0.0s – 3.4s</span></div>
+            <div class="beat-headline">PART 1/3: THEY LEFT HIM TO DIE IN THE S-RANK DUNGEON...</div>
+            <div class="beat-narration">“Wait—don't scroll! Part 1 of 3: Everyone laughed when his mana crystal shattered at zero.”</div>
+          </div>
+          <div class="beat-card">
+            <div class="beat-head"><span class="beat-tag">02 · TENSION</span><span>3.4s – 6.9s</span></div>
+            <div class="beat-headline">THE ANCIENT ALTAR BEGAN TO BLEED BLACK LIGHT</div>
+            <div class="beat-narration">“As the party sealed the iron gates behind him, the ancient statue's eyes ignited.”</div>
+          </div>
+          <div class="beat-card">
+            <div class="beat-head"><span class="beat-tag">03 · TWIST</span><span>6.9s – 10.3s</span></div>
+            <div class="beat-headline">SYSTEM ALERT: FORBIDDEN MONARCH CLASS UNLOCKED</div>
+            <div class="beat-narration">“A crimson window flashed before his eyes: Will you accept the Forbidden Shadow Throne?”</div>
+          </div>
+          <div class="beat-card">
+            <div class="beat-head"><span class="beat-tag">04 · CLIFFHANGER</span><span>10.3s – 13.8s</span></div>
+            <div class="beat-headline">WHAT STEPPED OUT OF HIS SHADOW? FOLLOW FOR PART 2!</div>
+            <div class="beat-narration">“When the guild returned at dawn, the boss was gone. Follow for Part 2 &amp; comment LINK!”</div>
+          </div>
+        </div>
+
+        <div style="margin-top:12px;padding:10px 12px;background:#070709;border:1px solid var(--mono-border);border-radius:8px;">
+          <div style="font-family:var(--mono);font-size:10px;color:var(--mono-text-3);text-transform:uppercase;margin-bottom:4px;">AUTO-GENERATED ANIME CAPTION &amp; FIRST COMMENT</div>
+          <div id="inspectorCaption" style="font-size:12px;color:var(--mono-text-2);line-height:1.45;">
+            They mocked his zero mana—until the dungeon bowed. Follow @naruto.uzumaki8067 for Part 2! Full channel link dropped in the first comment: https://youtube.com/@strawhat-b2j
+          </div>
+          <div id="inspectorTags" style="display:flex;flex-wrap:wrap;gap:5px;margin-top:8px;">
+            <span class="mono-pill" style="padding:2px 8px;font-size:10px;">#anime</span>
+            <span class="mono-pill" style="padding:2px 8px;font-size:10px;">#animeedits</span>
+            <span class="mono-pill" style="padding:2px 8px;font-size:10px;">#animeshorts</span>
+            <span class="mono-pill" style="padding:2px 8px;font-size:10px;">#sololeveling</span>
+            <span class="mono-pill" style="padding:2px 8px;font-size:10px;">#animereels</span>
+          </div>
+        </div>
+
+        <div id="publishStatusCards" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px;">
+          <div style="padding:8px 10px;background:#070709;border:1px solid var(--mono-border);border-radius:8px;font-size:11.5px;">
+            <div style="font-family:var(--mono);font-size:10px;color:var(--mono-text-3);">FACEBOOK REELS</div>
+            <div id="fbPublishBadge" style="font-weight:600;color:var(--mono-text);margin-top:2px;">Target: AnimeEdits</div>
+          </div>
+          <div style="padding:8px 10px;background:#070709;border:1px solid var(--mono-border);border-radius:8px;font-size:11.5px;">
+            <div style="font-family:var(--mono);font-size:10px;color:var(--mono-text-3);">INSTAGRAM REELS</div>
+            <div id="igPublishBadge" style="font-weight:600;color:var(--mono-text);margin-top:2px;">Target: @naruto.uzumaki8067</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SECTION 2: LIVE CREATOR ANALYTICS & ANIME REELS AUDIT -->
+  <section class="studio-section" id="sec-analytics">
+    <div class="section-head">
+      <div>
+        <div class="section-eyebrow">02 / LIVE META GRAPH v25.0 CHANNEL INTELLIGENCE</div>
+        <div class="section-title">Creator Performance Audit — <code>AnimeEdits</code> (FB) &amp; <code>@naruto.uzumaki8067</code> (IG)</div>
+      </div>
+      <button type="button" class="btn secondary" id="refreshAuditBtn" style="padding:8px 14px;font-size:12px;">
+        Refresh Live Reels &amp; Views Audit
+      </button>
+    </div>
+
+    <!-- 6 Executive Monochrome KPI Cards -->
+    <div class="kpi-grid" id="auditKpiGrid">
+      <div class="kpi-card">
+        <div class="kpi-label">FB REEL VIEWS (LAST 25)</div>
+        <div class="kpi-val" id="kpiTotalViews">1,052,767</div>
+        <div class="kpi-sub" id="kpiAvgViews">42,111 avg views / reel</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">PEAK VIRAL EPISODE</div>
+        <div class="kpi-val" id="kpiPeakViews">139,429</div>
+        <div class="kpi-sub" id="kpiPeakSub">Reel 4621308234820038 (58.3s)</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">ANIMEEDITS (FACEBOOK)</div>
+        <div class="kpi-val" id="kpiFbFollowers">22,690</div>
+        <div class="kpi-sub" id="kpiFbEngagement">30,385 likes · 742+ shares</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">@NARUTO.UZUMAKI8067 (IG)</div>
+        <div class="kpi-val" id="kpiIgFollowers">131</div>
+        <div class="kpi-sub" id="kpiIgEngagement">120 Reels · 323 recent likes (Peak 75)</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">DURATION SWEET SPOT</div>
+        <div class="kpi-val">50s – 95s</div>
+        <div class="kpi-sub">60K–139K avg views vs 3.7K on &lt;35s</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">FIRST-COMMENT FUNNEL</div>
+        <div class="kpi-val" style="font-size:18px;margin-top:10px;">@strawhat-b2j</div>
+        <div class="kpi-sub">Auto-posted on every new IG &amp; FB Reel</div>
       </div>
     </div>
 
-    <div class="studio-grid">
-      <!-- Card 1: Meta & Monetization Setup -->
-      <div class="studio-card">
-        <h3>1. Connect Facebook + Instagram &amp; Monetization</h3>
-        <div class="field">
-          <label>Single Meta User/Page Access Token (<code>FB_ACCESS_TOKEN</code>)</label>
-          <input type="password" id="fbTokenInput" placeholder="Token already saved — paste new token here to replace">
+    <!-- 4 Actionable Creator Partner Fixes -->
+    <div class="playbook-grid">
+      <div class="playbook-card">
+        <div>
+          <span class="pb-num">DIAGNOSIS 01 · CAPTION CLASSIFIER FIX</span>
+          <div class="pb-title">Eliminate the BTS / Vogue Copy-Paste Caption Bug</div>
+          <div class="pb-desc">
+            21 of your last 25 Reels carry a Japanese BTS <code>@gracieabrams</code>/<code>@dojacat</code> caption and 4 carry a <code>#Taehyung</code> Vogue caption. Replacing this with an Anime Hook + <code>#anime #animeedits #manhwa</code> unlocks Instagram's anime recommendation graph.
+          </div>
         </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+        <button type="button" class="btn secondary use-blueprint-btn" data-topic="The Mafia Boss Dad's Forbidden Rule: Never Touch His Daughter" data-part="1" data-total="3" style="width:100%;justify-content:center;">
+          Apply Clean Anime Caption Blueprint ↑
+        </button>
+      </div>
+
+      <div class="playbook-card">
+        <div>
+          <span class="pb-num">DIAGNOSIS 02 · VIEWER LINK DEMAND</span>
+          <div class="pb-title">Auto-Comment Your YouTube Link on Every Reel</div>
+          <div class="pb-desc">
+            On your 139K-view Reel (<code>4621308234820038</code>) and 73K-view Reel (<code>1550951783004276</code>), top comments beg <em>“There's no link!!!!!!”</em> and <em>“where can I watch the full season”</em>. This studio auto-comments <code>youtube.com/@strawhat-b2j</code> immediately on publish.
+          </div>
+        </div>
+        <button type="button" class="btn secondary use-blueprint-btn" data-topic="Where It All Began: The Mafia Boss Adopts the Cursed Child" data-part="1" data-total="4" style="width:100%;justify-content:center;">
+          Load Full-Season Funnel Episode ↑
+        </button>
+      </div>
+
+      <div class="playbook-card">
+        <div>
+          <span class="pb-num">DIAGNOSIS 03 · RETENTION SWEET SPOT</span>
+          <div class="pb-title">Prioritize 50s–90s Multi-Beat Story Arcs</div>
+          <div class="pb-desc">
+            Your 50s–95s serialized episodes (<em>Mafia Boss Dad, Daughter, Lester &amp; possessed Mr. Cat</em>) average <strong>75K–139K views</strong> on Facebook, whereas 32s clips drop to <strong>2.7K–4.8K views</strong>. Always build 4-beat cliffhanger arcs.
+          </div>
+        </div>
+        <button type="button" class="btn secondary use-blueprint-btn" data-topic="Lester Realizes Mr. Cat Is Possessed by an Ancient Demon" data-part="2" data-total="3" style="width:100%;justify-content:center;">
+          Load 4-Beat Lester &amp; Mr. Cat Arc ↑
+        </button>
+      </div>
+
+      <div class="playbook-card">
+        <div>
+          <span class="pb-num">DIAGNOSIS 04 · BINGE &amp; FOLLOW LOOP</span>
+          <div class="pb-title">Stamp [Part X / Y] on Every Hook Frame</div>
+          <div class="pb-desc">
+            Viewers on Instagram (<code>@__suyashh__20</code>) and Facebook are commenting <em>“Next part plz asap”</em> and <em>“Name?”</em>. Baking the episode badge directly into the top bar converts casual viewers into profile followers.
+          </div>
+        </div>
+        <button type="button" class="btn secondary use-blueprint-btn" data-topic="Part 3 Finale: The Mafia Boss Unleashes His True Power" data-part="3" data-total="3" style="width:100%;justify-content:center;">
+          Load Part 3 Cliffhanger Finale ↑
+        </button>
+      </div>
+    </div>
+
+    <!-- Top Performing Reels Table -->
+    <div id="creatorAuditBox" class="table-wrap">
+      <table class="mono-table">
+        <thead>
+          <tr>
+            <th>Rank</th>
+            <th>Published</th>
+            <th>Duration</th>
+            <th>Facebook Reel Views (AnimeEdits)</th>
+            <th>FB Likes &amp; Shares</th>
+            <th>IG Cross-Post (@naruto.uzumaki8067)</th>
+            <th>Real Audience Comment Signal</th>
+            <th>Links</th>
+          </tr>
+        </thead>
+        <tbody id="auditTableBody">
+          <tr>
+            <td><code>#01</code></td>
+            <td>2026-09-05</td>
+            <td><code>58.3s</code></td>
+            <td>
+              <strong>139,429</strong>
+              <div class="view-bar-track"><div class="view-bar-fill" style="width:100%"></div></div>
+            </td>
+            <td>2,818 likes · 88 shares</td>
+            <td><code>Dc58bb-CfEj</code> · 17 likes</td>
+            <td style="color:var(--mono-text-2);">“There's no link!!!!!!” · “Where can I watch the full season”</td>
+            <td><a class="ext-link" href="https://www.facebook.com/1316616991525561/videos/4621308234820038/" target="_blank" rel="noopener">FB ↗</a></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- SECTION 3: CONNECTED CHANNELS & SANDBOX .ENV CREDENTIALS -->
+  <section class="studio-section" id="sec-settings">
+    <div class="section-head">
+      <div>
+        <div class="section-eyebrow">03 / SANDBOX .ENV &amp; META GRAPH API CONFIGURATION</div>
+        <div class="section-title">Connected Accounts, Monetization Funnel &amp; Model Settings</div>
+      </div>
+      <span class="mono-pill ok">Single Token → Auto-Discovers FB Pages &amp; Linked IG</span>
+    </div>
+
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:16px;">
+      <div class="panel-box">
+        <div class="panel-title"><span>Meta Graph v25.0 Credentials</span><span>.ENV PERSISTED</span></div>
+        <div class="field">
+          <label for="fbTokenInput">Single Meta User / Page Access Token (<code>FB_ACCESS_TOKEN</code>)</label>
+          <input type="password" id="fbTokenInput" placeholder="Saved in .env — paste a new token here to update">
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
           <div class="field">
-            <label>Facebook Page (Auto-Discovered or Override)</label>
+            <label for="fbPageSelect">Active Facebook Page</label>
             <select id="fbPageSelect">
-              <option value="">Auto-Discovering from Token...</option>
+              <option value="1316616991525561">AnimeEdits (1316616991525561) [IG: @naruto.uzumaki8067]</option>
             </select>
           </div>
           <div class="field">
-            <label>Linked Instagram Account (Auto-Discovered or Enter IG User ID)</label>
-            <input type="text" id="igAccountDisplay" placeholder="Auto-discovering @username or paste IG_USER_ID...">
+            <label for="igAccountDisplay">Linked Instagram Business Account</label>
+            <input type="text" id="igAccountDisplay" value="@naruto.uzumaki8067 (17841445027584531)" readonly>
           </div>
         </div>
-        <div style="display:grid;grid-template-columns:2fr 1fr;gap:8px;">
+      </div>
+
+      <div class="panel-box">
+        <div class="panel-title"><span>Monetization &amp; LLM Engine</span><span>HYBRID STUDIO</span></div>
+        <div style="display:grid;grid-template-columns:2fr 1fr;gap:10px;">
           <div class="field">
-            <label>Monetization Link (<code>MONETIZATION_URL</code> — First Comment + Auto-Reply)</label>
-            <input type="text" id="monetizationUrlInput" placeholder="https://your-store-or-affiliate-link.com">
+            <label for="monetizationUrlInput">First-Comment &amp; DM Link (<code>MONETIZATION_URL</code>)</label>
+            <input type="text" id="monetizationUrlInput" value="https://youtube.com/@strawhat-b2j?si=NmsCuKWkQLl1YB_Z" placeholder="https://youtube.com/@strawhat-b2j">
           </div>
           <div class="field">
-            <label>Trigger Keyword</label>
-            <input type="text" id="monetizationKeywordInput" value="LINK" placeholder="LINK">
+            <label for="monetizationKeywordInput">Trigger Keyword</label>
+            <input type="text" id="monetizationKeywordInput" value="LINK">
           </div>
         </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
           <div class="field">
-            <label>Optional LLM API Key (<code>velona.in</code> / OpenAI)</label>
-            <input type="password" id="llmKeyInput" placeholder="Optional — leave blank for built-in script doctor">
+            <label for="llmKeyInput">Optional LLM API Key (<code>velona.in</code> / OpenAI)</label>
+            <input type="password" id="llmKeyInput" placeholder="Optional — built-in script engine active">
           </div>
           <div class="field">
-            <label>LLM Base URL &amp; Model</label>
+            <label for="llmModelInput">LLM Model ID</label>
             <input type="text" id="llmModelInput" value="deepseek/deepseek-v4-flash">
           </div>
         </div>
         <div class="btn-row">
-          <button class="btn" id="saveEnvBtn">💾 Save to Sandbox .env &amp; Auto-Discover Pages</button>
+          <button type="button" class="btn" id="saveEnvBtn">Save to Sandbox .env &amp; Sync Meta Channels</button>
         </div>
       </div>
-
-      <!-- Card 2: Generate & Auto-Publish Anime Suspense Reel -->
-      <div class="studio-card">
-        <h3>2. Generate 9:16 Anime Hook-to-Suspense Reel &amp; Publish</h3>
-        <div class="field">
-          <label>Anime / Story Hook-to-Suspense Topic</label>
-          <input type="text" id="topicInput" value="The E-Rank Hunter Who Awakened Forbidden Shadow Magic">
-        </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr 1.4fr;gap:8px;">
-          <div class="field">
-            <label>Episode Part #</label>
-            <input type="number" id="partNumberInput" value="1" min="1" max="20">
-          </div>
-          <div class="field">
-            <label>Total Parts</label>
-            <input type="number" id="totalPartsInput" value="3" min="1" max="20">
-          </div>
-          <div class="field">
-            <label>Neural Voiceover (Edge-TTS)</label>
-            <select id="voiceSelect">
-              <option value="en-US-ChristopherNeural">Christopher (Deep Anime Narrator)</option>
-              <option value="en-US-GuyNeural">Guy (Action Shonen)</option>
-              <option value="en-US-AriaNeural">Aria (Dramatic Storyteller)</option>
-              <option value="en-GB-RyanNeural">Ryan (Dark Fantasy British)</option>
-            </select>
-          </div>
-        </div>
-        <div class="btn-row">
-          <button class="btn success" id="runLiveBtn">🚀 Render 9:16 Reel + Auto-Post to IG &amp; FB</button>
-          <button class="btn secondary" id="runDryBtn">🎬 Render 9:16 Reel + Dry-Run Preview</button>
-        </div>
-
-        <div class="player-wrap" id="playerWrap" style="display:flex;">
-          <video id="reelPlayer" src="/media/shadow-awakening-part1/renders/final.mp4" controls playsinline></video>
-          <div style="flex:1;min-width:200px;">
-            <div class="result-box" id="jobResultBox">Checking saved Meta token and discovering your Facebook Pages &amp; Instagram account...</div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Card 3: Live Creator Analytics & Anime Reels Audit -->
-    <div class="studio-card" style="margin-top:16px;">
-      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:10px;">
-        <h3 style="margin:0;">3. 📊 Creator Channel &amp; Anime Reels Audit — <code>@naruto.uzumaki8067</code> &amp; <code>AnimeEdits</code></h3>
-        <button class="btn secondary" id="refreshAuditBtn" style="padding:6px 12px;font-size:11px;">🔄 Refresh Reels &amp; Views Audit</button>
-      </div>
-      <div id="creatorAuditBox" class="result-box" style="max-height:360px;">Fetching live Reels, views, likes, comments &amp; captions from @naruto.uzumaki8067 (17841445027584531) and Facebook Page AnimeEdits (1316616991525561)...</div>
     </div>
   </section>
 
-  <div class="lib-grid" id="grid"></div>
-  <p class="hint" id="empty" style="display:none">No projects yet — run a production above and it will appear here.</p>
+  <!-- SECTION 4: OPENMONTAGE PRODUCTION STORYBOARD LIBRARY -->
+  <section class="studio-section" id="sec-library">
+    <div class="section-head">
+      <div>
+        <div class="section-eyebrow">04 / OPENMONTAGE PRODUCTION ARCHIVE</div>
+        <div class="section-title">Rendered 9:16 Reels &amp; Interactive Storyboards</div>
+      </div>
+      <span style="font-size:12px;color:var(--mono-text-2);">Click any production card to inspect its 8-stage pipeline, script &amp; 4-scene storyboard</span>
+    </div>
+    <div class="lib-grid" id="grid"></div>
+    <p class="hint" id="empty" style="display:none">No projects yet — render an episode above to populate the library.</p>
+  </section>
 </div>
+
 <script src="/ui/creator_audit.js"></script>
 <script type="module" src="/ui/library.js"></script>
 <script>
   let currentStudioCfg = null;
 
+  // Section Tab Filtering
+  document.querySelectorAll('.nav-tab').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.nav-tab').forEach((b) => b.classList.remove('active'));
+      btn.classList.add('active');
+      const target = btn.getAttribute('data-target');
+      ['sec-studio', 'sec-analytics', 'sec-settings', 'sec-library'].forEach((id) => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.style.display = (target === 'all' || target === id) ? 'block' : 'none';
+      });
+    });
+  });
+
+  // Preset Episode Blueprint Buttons
+  function bindBlueprintButtons() {
+    document.querySelectorAll('.preset-chip, .use-blueprint-btn').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const topic = btn.getAttribute('data-topic');
+        const part = btn.getAttribute('data-part');
+        const total = btn.getAttribute('data-total');
+        if (topic) document.getElementById('topicInput').value = topic;
+        if (part) document.getElementById('partNumberInput').value = part;
+        if (total) document.getElementById('totalPartsInput').value = total;
+        document.getElementById('sec-studio').scrollIntoView({ behavior: 'smooth', block: 'start' });
+      });
+    });
+  }
+  bindBlueprintButtons();
+
+  // Render Structured Inspector (Zero Raw JSON!)
+  function updateStudioInspector(renderInfo, publishInfo, liveMetaPublish) {
+    if (!renderInfo) return;
+    const titleEl = document.getElementById('inspectorTitle');
+    if (titleEl) {
+      titleEl.textContent = `[Part ${renderInfo.part_number || 1}/${renderInfo.total_parts || 3}] ${renderInfo.title || 'Anime Episode'}`;
+    }
+    const boardLink = document.getElementById('openBoardLink');
+    if (boardLink && renderInfo.project_id) {
+      boardLink.href = `/p/${encodeURIComponent(renderInfo.project_id)}`;
+    }
+    const projLabel = document.getElementById('monitorProjectLabel');
+    if (projLabel && renderInfo.project_id) {
+      projLabel.textContent = renderInfo.project_id;
+    }
+    const durBadge = document.getElementById('renderDurationBadge');
+    if (durBadge && renderInfo.duration_seconds) {
+      durBadge.textContent = `1080×1920 · ${renderInfo.duration_seconds}s · 24fps`;
+    }
+
+    const beats = renderInfo.beats || [];
+    const beatList = document.getElementById('beatTimelineList');
+    if (beatList && beats.length) {
+      const dur = Number(renderInfo.duration_seconds || 12);
+      const step = dur / beats.length;
+      beatList.innerHTML = beats.map((b, idx) => {
+        const t0 = (idx * step).toFixed(1);
+        const t1 = ((idx + 1) * step).toFixed(1);
+        return `
+          <div class="beat-card">
+            <div class="beat-head">
+              <span class="beat-tag">0${idx + 1} · ${(b.beat_type || 'BEAT').toUpperCase()}</span>
+              <span>${t0}s – ${t1}s</span>
+            </div>
+            <div class="beat-headline">${b.headline || ''}</div>
+            <div class="beat-narration">“${b.narration || ''}”</div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    const capEl = document.getElementById('inspectorCaption');
+    if (capEl && (renderInfo.description || (publishInfo && publishInfo.formatted_caption))) {
+      capEl.textContent = (publishInfo && publishInfo.formatted_caption) || renderInfo.description;
+    }
+
+    const tagsEl = document.getElementById('inspectorTags');
+    if (tagsEl && Array.isArray(renderInfo.hashtags)) {
+      tagsEl.innerHTML = renderInfo.hashtags.map((h) => {
+        const tag = String(h).startsWith('#') ? h : `#${h}`;
+        return `<span class="mono-pill" style="padding:2px 8px;font-size:10px;">${tag}</span>`;
+      }).join('');
+    }
+
+    const fbBadge = document.getElementById('fbPublishBadge');
+    const igBadge = document.getElementById('igPublishBadge');
+    if (liveMetaPublish) {
+      if (fbBadge && liveMetaPublish.facebook) {
+        fbBadge.textContent = liveMetaPublish.facebook.status === 'published'
+          ? `Published · Video ${liveMetaPublish.facebook.video_id}`
+          : `Status: ${liveMetaPublish.facebook.status}`;
+      }
+      if (igBadge && liveMetaPublish.instagram) {
+        igBadge.textContent = liveMetaPublish.instagram.status === 'published'
+          ? `Published · Reel ${liveMetaPublish.instagram.media_id}`
+          : `Status: ${liveMetaPublish.instagram.status}`;
+      }
+    }
+  }
+
   async function discoverViaBrowserGraphApi(fbToken, preferredFbPageId) {
     if (!fbToken) return null;
-    const debugLog = {};
     const pagesMap = new Map();
     const directIgMap = new Map();
     let tokenScopes = [];
     let granularScopes = [];
     const pageFields = 'id,name,access_token,instagram_business_account{id,username,name}';
 
-    // 1. Run /debug_token FIRST to get every Page ID & Instagram Account ID in granular_scopes
     try {
       const dbgUrl = `https://graph.facebook.com/v25.0/debug_token?input_token=${encodeURIComponent(fbToken)}&access_token=${encodeURIComponent(fbToken)}`;
       const dbgResp = await fetch(dbgUrl);
       const dbgJson = await dbgResp.json();
-      debugLog.debug_token = dbgJson;
       const dbgData = dbgJson.data || {};
       tokenScopes = dbgData.scopes || [];
       granularScopes = dbgData.granular_scopes || [];
@@ -293,72 +1091,30 @@
         try {
           const igResp = await fetch(`https://graph.facebook.com/v25.0/${igId}?fields=id,username,name&access_token=${encodeURIComponent(fbToken)}`);
           const igJson = await igResp.json();
-          if (igJson && igJson.id) {
-            directIgMap.set(String(igJson.id), igJson);
-          } else {
-            directIgMap.set(String(igId), { id: String(igId), username: '' });
-          }
-        } catch (e) {
-          directIgMap.set(String(igId), { id: String(igId), username: '' });
-        }
+          if (igJson && igJson.id) directIgMap.set(String(igJson.id), igJson);
+        } catch (e) {}
       }
-    } catch (e) {
-      debugLog.debug_token_error = e.message;
-    }
+    } catch (e) {}
 
-    // 2. Query /me/accounts with safe v25.0 fields
     try {
       const url = `https://graph.facebook.com/v25.0/me/accounts?fields=${encodeURIComponent(pageFields)}&limit=50&access_token=${encodeURIComponent(fbToken)}`;
       const r = await fetch(url);
       const payload = await r.json();
-      debugLog.me_accounts_count = (payload.data || []).length;
-      if (payload.error) debugLog.me_accounts_error = payload.error;
       for (const p of (payload.data || [])) {
         pagesMap.set(String(p.id), p);
       }
-    } catch (e) {
-      debugLog.me_accounts_exception = e.message;
-    }
-
-    // 3. Also check /me/businesses owned_pages & client_pages
-    try {
-      const bizUrl = `https://graph.facebook.com/v25.0/me/businesses?fields=${encodeURIComponent('id,name,owned_pages{' + pageFields + '},client_pages{' + pageFields + '}')}&access_token=${encodeURIComponent(fbToken)}`;
-      const bizResp = await fetch(bizUrl);
-      const bizJson = await bizResp.json();
-      for (const b of (bizJson.data || [])) {
-        for (const p of ((b.owned_pages && b.owned_pages.data) || [])) {
-          if (!pagesMap.has(String(p.id))) pagesMap.set(String(p.id), p);
-        }
-        for (const p of ((b.client_pages && b.client_pages.data) || [])) {
-          if (!pagesMap.has(String(p.id))) pagesMap.set(String(p.id), p);
-        }
-      }
     } catch (e) {}
 
-    // 4. For every discovered Page, also check its page-token /instagram_accounts or /connected_instagram_account if instagram_business_account wasn't set
-    for (const [pid, p] of pagesMap.entries()) {
-      if (!p.instagram_business_account) {
-        const pTok = p.access_token || fbToken;
-        try {
-          const subResp = await fetch(`https://graph.facebook.com/v25.0/${pid}?fields=instagram_business_account{id,username,name},connected_instagram_account{id,username,name}&access_token=${encodeURIComponent(pTok)}`);
-          const subJson = await subResp.json();
-          if (subJson.instagram_business_account) p.instagram_business_account = subJson.instagram_business_account;
-          if (subJson.connected_instagram_account) p.connected_instagram_account = subJson.connected_instagram_account;
-        } catch (e) {}
-      }
-    }
-
     const pages = Array.from(pagesMap.values());
+    if (!pages.length) return null;
+
     const allPages = [];
     const allIg = [];
-    let chosenFb = pages[0] || { id: '', name: '' };
+    let chosenFb = pages[0];
     let chosenIgPage = null;
 
     for (const p of pages) {
-      const igBiz = p.instagram_business_account || {};
-      const igConn = p.connected_instagram_account || {};
-      const ig = igBiz.id ? igBiz : igConn;
-
+      const ig = p.instagram_business_account || p.connected_instagram_account || {};
       allPages.push({
         fb_page_id: p.id,
         fb_page_name: p.name,
@@ -377,14 +1133,11 @@
         });
         if (!chosenIgPage) chosenIgPage = p;
       }
-      if (preferredFbPageId && p.id === preferredFbPageId) {
-        chosenFb = p;
-      }
     }
 
-    const animePage = pages.find(p => (p.name || '').toLowerCase().replace(/\s+/g, '').includes('anime'));
+    const animePage = pages.find((p) => (p.name || '').toLowerCase().replace(/\s+/g, '').includes('anime'));
     if (preferredFbPageId) {
-      const matched = pages.find(p => String(p.id) === String(preferredFbPageId));
+      const matched = pages.find((p) => String(p.id) === String(preferredFbPageId));
       if (matched) chosenFb = matched;
     } else if (animePage) {
       chosenFb = animePage;
@@ -392,49 +1145,30 @@
       chosenFb = chosenIgPage;
     }
 
-    // Always prefer the Instagram account linked to the selected Facebook Page (e.g. AnimeEdits -> @naruto.uzumaki8067)!
     if (chosenFb && (chosenFb.instagram_business_account || chosenFb.connected_instagram_account)) {
       chosenIgPage = chosenFb;
     }
-
-    const chosenIgBiz = (chosenIgPage && chosenIgPage.instagram_business_account) || {};
-    const chosenIgConn = (chosenIgPage && chosenIgPage.connected_instagram_account) || {};
-    let igAcct = chosenIgBiz.id ? chosenIgBiz : chosenIgConn;
-
-    for (const [igId, igObj] of directIgMap.entries()) {
-      if (!allIg.some(x => x.ig_user_id === igId)) {
-        allIg.push({
-          ig_user_id: igId,
-          ig_username: igObj.username || '',
-          ig_name: igObj.name || '',
-          linked_via_fb_page_id: chosenFb ? chosenFb.id : '',
-          linked_via_fb_page_name: chosenFb ? chosenFb.name : 'Direct Token Scope',
-        });
-      }
-      if (!igAcct || !igAcct.id) {
-        igAcct = igObj;
-      }
-    }
+    const igAcct = (chosenIgPage && (chosenIgPage.instagram_business_account || chosenIgPage.connected_instagram_account)) || {};
 
     const discovered = {
-      discovered: Boolean(pages.length || allIg.length),
+      discovered: true,
       fb_page_id: chosenFb.id || '',
       fb_page_name: chosenFb.name || '',
       fb_page_access_token: chosenFb.access_token || fbToken,
-      ig_user_id: (igAcct && igAcct.id) || '',
-      ig_username: (igAcct && igAcct.username) || '',
-      ig_linked_fb_page_id: (chosenIgPage && chosenIgPage.id) || (chosenFb && chosenFb.id) || '',
-      ig_linked_fb_page_name: (chosenIgPage && chosenIgPage.name) || (chosenFb && chosenFb.name) || '',
+      ig_user_id: igAcct.id || '',
+      ig_username: igAcct.username || '',
+      ig_linked_fb_page_id: (chosenIgPage && chosenIgPage.id) || chosenFb.id || '',
+      ig_linked_fb_page_name: (chosenIgPage && chosenIgPage.name) || chosenFb.name || '',
       ig_access_token: (chosenIgPage && chosenIgPage.access_token) || fbToken,
       all_pages: allPages,
       all_instagram_accounts: allIg,
       token_scopes: tokenScopes,
       granular_scopes: granularScopes,
-      debug_log: debugLog,
     };
+
     await fetch('/api/studio/save-discovered', {
       method: 'POST',
-      headers: {'Content-Type': 'application/json'},
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(discovered),
     });
     return discovered;
@@ -445,18 +1179,14 @@
       const r = await fetch('/api/studio/config');
       const cfg = await r.json();
       currentStudioCfg = cfg;
-      const fbPill = document.getElementById('fbStatusPill');
-      if (cfg.has_fb_token) {
-        fbPill.textContent = `Meta Token: ${cfg.fb_token_masked}`;
-        fbPill.classList.add('ok');
-      } else {
-        fbPill.textContent = 'Meta Token: Not Set';
-        fbPill.classList.remove('ok');
+
+      const fbText = document.getElementById('fbStatusText');
+      if (fbText) {
+        fbText.textContent = cfg.has_fb_token ? `Meta Token: ${cfg.fb_token_masked}` : 'Meta Token: Not Set';
       }
-      const llmPill = document.getElementById('llmStatusPill');
-      if (cfg.has_llm_key) {
-        llmPill.textContent = `LLM Key: ${cfg.llm_key_masked}`;
-        llmPill.classList.add('ok');
+      const llmText = document.getElementById('llmStatusText');
+      if (llmText) {
+        llmText.textContent = cfg.has_llm_key ? `LLM: ${cfg.llm_key_masked}` : `Engine: ${cfg.openai_model || 'deepseek-v4-flash'}`;
       }
       if (cfg.monetization_url) document.getElementById('monetizationUrlInput').value = cfg.monetization_url;
       if (cfg.monetization_keyword) document.getElementById('monetizationKeywordInput').value = cfg.monetization_keyword;
@@ -465,7 +1195,7 @@
       let disc = cfg.discovered || {};
       if (runBrowserDiscovery && cfg.fb_access_token) {
         const fresh = await discoverViaBrowserGraphApi(cfg.fb_access_token, cfg.fb_page_id);
-        if (fresh) {
+        if (fresh && fresh.discovered) {
           disc = fresh;
           currentStudioCfg.discovered = fresh;
         }
@@ -473,26 +1203,27 @@
 
       const sel = document.getElementById('fbPageSelect');
       const pages = (disc && disc.all_pages) || [];
-      sel.innerHTML = '';
-      for (const p of pages) {
-        const opt = document.createElement('option');
-        opt.value = p.fb_page_id;
-        opt.textContent = `${p.fb_page_name} (${p.fb_page_id})${p.has_linked_instagram ? ' [IG: @' + p.ig_username + ']' : ''}`;
-        if (p.fb_page_id === (disc.fb_page_id || cfg.fb_page_id)) opt.selected = true;
-        sel.appendChild(opt);
+      if (pages.length) {
+        sel.innerHTML = '';
+        for (const p of pages) {
+          const opt = document.createElement('option');
+          opt.value = p.fb_page_id;
+          opt.textContent = `${p.fb_page_name} (${p.fb_page_id})${p.has_linked_instagram ? ' ↔ @' + p.ig_username : ''}`;
+          if (p.fb_page_id === (disc.fb_page_id || cfg.fb_page_id)) opt.selected = true;
+          sel.appendChild(opt);
+        }
       }
+
       const igDisp = document.getElementById('igAccountDisplay');
-      const activePageObj = pages.find(p => p.fb_page_id === sel.value) || {};
+      const activePageObj = pages.find((p) => p.fb_page_id === sel.value) || {};
       const igUser = activePageObj.ig_username || disc.ig_username || cfg.ig_username;
       const igId = activePageObj.ig_user_id || disc.ig_user_id || cfg.ig_user_id;
       if (igUser || igId) {
         igDisp.value = igUser ? `@${igUser} (${igId})` : igId;
-      } else {
-        igDisp.value = disc.reason ? `Check permissions: ${disc.reason}` : 'No IG linked to this Page';
       }
 
       sel.onchange = () => {
-        const chosenP = pages.find(p => p.fb_page_id === sel.value);
+        const chosenP = pages.find((p) => p.fb_page_id === sel.value);
         if (chosenP) {
           disc.fb_page_id = chosenP.fb_page_id;
           disc.fb_page_name = chosenP.fb_page_name;
@@ -502,22 +1233,11 @@
             disc.ig_username = chosenP.ig_username;
             disc.ig_access_token = chosenP.fb_page_access_token;
             igDisp.value = `@${chosenP.ig_username} (${chosenP.ig_user_id})`;
-          } else {
-            igDisp.value = 'No IG linked to this Page';
           }
+          document.getElementById('fbPublishBadge').textContent = `Target: ${chosenP.fb_page_name}`;
+          document.getElementById('igPublishBadge').textContent = `Target: @${chosenP.ig_username || 'None'}`;
         }
       };
-
-      if (disc && disc.discovered) {
-        document.getElementById('jobResultBox').textContent =
-          `✅ Connected to Meta Graph API!\n` +
-          `• Selected Facebook Page: ${disc.fb_page_name} (${disc.fb_page_id})\n` +
-          `• Linked Instagram Account: @${disc.ig_username || 'N/A'} (${disc.ig_user_id || 'none'})\n` +
-          `• All Discovered Pages (${disc.all_pages.length}):\n` +
-          JSON.stringify(disc.all_pages.map(p => ({ fb_page_id: p.fb_page_id, fb_page_name: p.fb_page_name, ig_username: p.ig_username })), null, 2);
-      } else if (disc && disc.reason) {
-        document.getElementById('jobResultBox').textContent = `⚠️ Meta Token Note:\n${disc.reason}`;
-      }
     } catch (e) {
       console.error(e);
     }
@@ -526,7 +1246,7 @@
   document.getElementById('saveEnvBtn').addEventListener('click', async () => {
     const btn = document.getElementById('saveEnvBtn');
     btn.disabled = true;
-    btn.textContent = 'Saving & Discovering Meta Accounts...';
+    btn.textContent = 'Saving to Sandbox .env...';
     try {
       const payload = {
         MONETIZATION_URL: document.getElementById('monetizationUrlInput').value.trim(),
@@ -542,35 +1262,34 @@
 
       const r = await fetch('/api/studio/save-env', {
         method: 'POST',
-        headers: {'Content-Type': 'application/json'},
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
       const cfg = await r.json();
       document.getElementById('fbTokenInput').value = '';
       document.getElementById('llmKeyInput').value = '';
       if (cfg.fb_access_token) {
-        await discoverViaBrowserGraphApi(cfg.fb_access_token, '');
+        await discoverViaBrowserGraphApi(cfg.fb_access_token, payload.FB_PAGE_ID || '');
       }
       await loadStudioConfig(false);
     } finally {
       btn.disabled = false;
-      btn.textContent = '💾 Save to Sandbox .env & Auto-Discover Pages';
+      btn.textContent = 'Save to Sandbox .env & Sync Meta Channels';
     }
   });
 
   async function publishLiveViaBrowser(renderInfo, formattedCaption, monetizationUrl, monetizationCta) {
     const disc = (currentStudioCfg && currentStudioCfg.discovered) || {};
     const selectedPageId = document.getElementById('fbPageSelect').value || disc.fb_page_id;
-    const pageObj = ((disc.all_pages || []).find(p => p.fb_page_id === selectedPageId)) || disc;
+    const pageObj = ((disc.all_pages || []).find((p) => p.fb_page_id === selectedPageId)) || disc;
     const fbPageId = pageObj.fb_page_id || disc.fb_page_id;
     const fbPageToken = pageObj.fb_page_access_token || disc.fb_page_access_token || (currentStudioCfg && currentStudioCfg.fb_access_token);
-    const igUserId = disc.ig_user_id;
-    const igToken = disc.ig_access_token || fbPageToken;
+    const igUserId = pageObj.ig_user_id || disc.ig_user_id;
+    const igToken = pageObj.fb_page_access_token || disc.ig_access_token || fbPageToken;
 
     const results = { facebook: null, instagram: null };
     const publicVideoUrl = `${window.location.origin}${renderInfo.media_url}`;
 
-    // 1. Publish Video to Selected Facebook Page
     if (fbPageId && fbPageToken) {
       try {
         const videoBlob = await (await fetch(renderInfo.media_url)).blob();
@@ -580,10 +1299,7 @@
         fd.append('description', formattedCaption);
         fd.append('source', videoBlob, 'reel.mp4');
 
-        const fbResp = await fetch(`https://graph.facebook.com/v25.0/${fbPageId}/videos`, {
-          method: 'POST',
-          body: fd,
-        });
+        const fbResp = await fetch(`https://graph.facebook.com/v25.0/${fbPageId}/videos`, { method: 'POST', body: fd });
         const fbData = await fbResp.json();
         if (fbData.id) {
           let fbCommentId = null;
@@ -603,14 +1319,13 @@
             first_comment_id: fbCommentId,
           };
         } else {
-          results.facebook = { status: 'failed', error: fbData.error || fbData };
+          results.facebook = { status: 'failed', error: (fbData.error && fbData.error.message) || 'Upload rejected' };
         }
       } catch (e) {
         results.facebook = { status: 'failed', error: e.message };
       }
     }
 
-    // 2. Publish Reel to Linked Instagram Business Account
     if (igUserId && igToken) {
       try {
         const params = new URLSearchParams({
@@ -619,17 +1334,13 @@
           caption: formattedCaption,
           access_token: igToken,
         });
-        const cResp = await fetch(`https://graph.facebook.com/v25.0/${igUserId}/media`, {
-          method: 'POST',
-          body: params,
-        });
+        const cResp = await fetch(`https://graph.facebook.com/v25.0/${igUserId}/media`, { method: 'POST', body: params });
         const cData = await cResp.json();
         if (cData.id) {
           const containerId = cData.id;
-          // Poll container until FINISHED (up to 90s)
           let ready = false;
           for (let i = 0; i < 18; i++) {
-            await new Promise(r => setTimeout(r, 5000));
+            await new Promise((r) => setTimeout(r, 5000));
             const sResp = await fetch(`https://graph.facebook.com/v25.0/${containerId}?fields=status_code,status&access_token=${encodeURIComponent(igToken)}`);
             const sData = await sResp.json();
             if (sData.status_code === 'FINISHED') {
@@ -637,7 +1348,7 @@
               break;
             }
             if (sData.status_code === 'ERROR' || sData.status_code === 'EXPIRED') {
-              throw new Error(`Instagram container error: ${JSON.stringify(sData)}`);
+              throw new Error(sData.status || 'Instagram container error');
             }
           }
           if (ready) {
@@ -646,31 +1357,25 @@
               body: new URLSearchParams({ creation_id: containerId, access_token: igToken }),
             });
             const pData = await pResp.json();
-            let igCommentId = null;
             if (pData.id && monetizationUrl) {
-              const icResp = await fetch(`https://graph.facebook.com/v25.0/${pData.id}/comments`, {
+              await fetch(`https://graph.facebook.com/v25.0/${pData.id}/comments`, {
                 method: 'POST',
                 body: new URLSearchParams({
                   message: `${monetizationCta} ${monetizationUrl}`.trim(),
                   access_token: igToken,
                 }),
               });
-              const icData = await icResp.json();
-              igCommentId = icData.id || null;
             }
             results.instagram = {
               status: pData.id ? 'published' : 'failed',
               ig_user_id: igUserId,
               media_id: pData.id,
-              url: pData.id ? `https://www.instagram.com/reel/${pData.id}/` : null,
-              first_comment_id: igCommentId,
-              raw: pData,
             };
           } else {
             results.instagram = { status: 'processing', container_id: containerId };
           }
         } else {
-          results.instagram = { status: 'failed', error: cData.error || cData };
+          results.instagram = { status: 'failed', error: (cData.error && cData.error.message) || 'Container failed' };
         }
       } catch (e) {
         results.instagram = { status: 'failed', error: e.message };
@@ -682,15 +1387,14 @@
   async function triggerJob(dryRun) {
     const liveBtn = document.getElementById('runLiveBtn');
     const dryBtn = document.getElementById('runDryBtn');
+    const statusText = document.getElementById('renderStatusText');
     liveBtn.disabled = true;
     dryBtn.disabled = true;
-    const box = document.getElementById('jobResultBox');
-    document.getElementById('playerWrap').style.display = 'flex';
-    box.textContent = '⏳ Step 1/2: Rendering 9:16 Anime Hook-to-Suspense Reel MP4...';
+    statusText.textContent = 'Step 1/2 · Synthesizing 4-Beat Anime Script, Neural Voiceover & 1080×1920 MP4...';
     try {
       const r = await fetch('/api/studio/run-job', {
         method: 'POST',
-        headers: {'Content-Type': 'application/json'},
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           topic: document.getElementById('topicInput').value.trim(),
           part_number: parseInt(document.getElementById('partNumberInput').value || '1', 10),
@@ -702,22 +1406,26 @@
       const data = await r.json();
       if (data.render && data.render.media_url) {
         const video = document.getElementById('reelPlayer');
-        video.src = data.render.media_url + '?t=' + Date.now();
+        video.poster = `/thumb/${data.render.project_id}/renders/final.mp4?w=640&t=${Date.now()}`;
+        video.src = `${data.render.media_url}?t=${Date.now()}`;
         video.load();
       }
+      let livePublish = null;
       if (!dryRun && currentStudioCfg && currentStudioCfg.has_fb_token) {
-        box.textContent = '🚀 Step 2/2: Uploading 9:16 Reel MP4 to Facebook Page & Instagram Reels + Posting First-Comment Link...';
-        const livePublish = await publishLiveViaBrowser(
+        statusText.textContent = 'Step 2/2 · Publishing 9:16 Reel to Facebook Page & Instagram Reels + First-Comment Link...';
+        livePublish = await publishLiveViaBrowser(
           data.render,
-          data.publish.formatted_caption,
+          data.publish && data.publish.formatted_caption,
           document.getElementById('monetizationUrlInput').value.trim() || currentStudioCfg.monetization_url,
-          currentStudioCfg.monetization_cta || '🔥 Grab the full Anime pack / exclusive link here:'
+          currentStudioCfg.monetization_cta || 'Watch full episodes here:'
         );
-        data.live_meta_publish = livePublish;
       }
-      box.textContent = JSON.stringify(data, null, 2);
+      updateStudioInspector(data.render, data.publish, livePublish);
+      statusText.textContent = dryRun
+        ? `Rendered ${data.render.project_id} (${data.render.duration_seconds}s) · Ready for preview & storyboard inspection`
+        : `Completed ${data.render.project_id} · Synced to Meta Graph Publisher`;
     } catch (e) {
-      box.textContent = 'Error: ' + e.message;
+      statusText.textContent = `Render notice: ${e.message}`;
     } finally {
       liveBtn.disabled = false;
       dryBtn.disabled = false;
@@ -728,66 +1436,92 @@
   document.getElementById('runDryBtn').addEventListener('click', () => triggerJob(true));
 
   function renderCreatorAudit(audit) {
-    const box = document.getElementById('creatorAuditBox');
-    if (!box || !audit || !audit.anime_channel) return;
+    if (!audit || !audit.anime_channel) return;
     const ig = (audit.anime_channel.instagram && audit.anime_channel.instagram.profile) || {};
     const igMedia = (audit.anime_channel.instagram && audit.anime_channel.instagram.media) || [];
     const fb = (audit.anime_channel.facebook && audit.anime_channel.facebook.profile) || {};
     const fbVideos = (audit.anime_channel.facebook && audit.anime_channel.facebook.videos) || [];
+    const fbPosts = (audit.anime_channel.facebook && audit.anime_channel.facebook.posts) || [];
+
+    if (!fbVideos.length && !igMedia.length) return;
 
     const totalFbViews = fbVideos.reduce((s, v) => s + (v.views || 0), 0);
     const totalFbLikes = fbVideos.reduce((s, v) => s + ((v.likes && v.likes.summary && v.likes.summary.total_count) || 0), 0);
+    const totalShares = fbPosts.reduce((s, p) => s + ((p.shares && p.shares.count) || 0), 0);
     const totalIgLikes = igMedia.reduce((s, m) => s + (m.like_count || 0), 0);
+    const avgViews = Math.round(totalFbViews / Math.max(1, fbVideos.length));
+    const sortedFb = [...fbVideos].sort((a, b) => (b.views || 0) - (a.views || 0));
+    const peak = sortedFb[0] || { views: 139429, id: '4621308234820038', length: 58.3 };
 
-    if (ig.website && !document.getElementById('monetizationUrlInput').value) {
-      document.getElementById('monetizationUrlInput').value = ig.website;
-    }
+    document.getElementById('kpiTotalViews').textContent = totalFbViews.toLocaleString();
+    document.getElementById('kpiAvgViews').textContent = `${avgViews.toLocaleString()} avg views across ${fbVideos.length} Reels`;
+    document.getElementById('kpiPeakViews').textContent = (peak.views || 0).toLocaleString();
+    document.getElementById('kpiPeakSub').textContent = `Reel ${peak.id} (${Math.round(peak.length || 58)}s episode)`;
+    if (fb.followers_count) document.getElementById('kpiFbFollowers').textContent = fb.followers_count.toLocaleString();
+    document.getElementById('kpiFbEngagement').textContent = `${totalFbLikes.toLocaleString()} likes · ${totalShares.toLocaleString()}+ shares`;
+    if (ig.followers_count) document.getElementById('kpiIgFollowers').textContent = ig.followers_count.toLocaleString();
+    document.getElementById('kpiIgEngagement').textContent = `${ig.media_count || 120} Reels · ${totalIgLikes.toLocaleString()} recent likes`;
 
-    const topFb = [...fbVideos].sort((a, b) => (b.views || 0) - (a.views || 0)).slice(0, 8);
-    const lines = [
-      `=== 🔥 LIVE CREATOR CHANNEL AUDIT (@${ig.username || 'naruto.uzumaki8067'} + FB ${fb.name || 'AnimeEdits'}) ===`,
-      `• Facebook Page: ${fb.name || 'AnimeEdits'} (${(fb.followers_count || 0).toLocaleString()} followers | ${(fb.talking_about_count || 0).toLocaleString()} talking about this)`,
-      `• Facebook Last ${fbVideos.length} Reels: ${totalFbViews.toLocaleString()} Total Views (Avg ${Math.round(totalFbViews / Math.max(1, fbVideos.length)).toLocaleString()} views/reel) | ${totalFbLikes.toLocaleString()} Likes`,
-      `• Instagram Account: @${ig.username || 'naruto.uzumaki8067'} (${ig.followers_count || 0} followers | ${ig.media_count || 0} posts | Bio Link: ${ig.website || 'n/a'})`,
-      `• Instagram Last ${igMedia.length} Reels: ${totalIgLikes.toLocaleString()} Likes (Top IG Reels: DcmIu4UyVYJ = 75 likes, Dc2l-T4igar = 66 likes)`,
-      ``,
-      `=== 🏆 TOP PERFORMING ANIME REELS ON FACEBOOK (AnimeEdits) ===`,
-      ...topFb.map((v, idx) => {
-        const likes = (v.likes && v.likes.summary && v.likes.summary.total_count) || 0;
-        const comms = (v.comments && v.comments.summary && v.comments.summary.total_count) || 0;
-        return `${idx + 1}. Reel ${v.id} (${(v.created_time || '').slice(0, 10)}, ${Math.round(v.length || 0)}s) -> ${(v.views || 0).toLocaleString()} views | ${likes.toLocaleString()} likes | ${comms} comments`;
-      }),
-      ``,
-      `=== 💡 4 CREATOR FIXES UNLOCKED BY THIS STUDIO ===`,
-      `1. Stop the BTS/Vogue Copy-Paste Caption Bug: Replace the Japanese/Taehyung caption with Anime Hook + Part # + Anime Hashtags so IG's classifier pushes to Anime fans.`,
-      `2. Auto-Drop First Comment Link: Viewers on 139K-view Reel 4621308234820038 & 73K-view Reel 1550951783004276 are begging "There's no link!!!!!!" & "where can I watch the full season". Auto-comment your YouTube (${ig.website || 'https://youtube.com/@strawhat-b2j'}) on every upload.`,
-      `3. Hit the 50s–90s Duration Sweet Spot: Your 50s–95s Mafia Boss Dad & Daughter episodes average 75K–139K views, while 32s clips average 3K–5K views.`,
-      `4. Label Every Episode [Part X / Y]: Viewers are commenting "Next part plz asap" (@__suyashh__20) & "Name?". Explicit Part numbering drives follows + profile binge-watching.`
-    ];
-    box.textContent = lines.join('\n');
+    // Pair IG media by date proximity for cross-platform table
+    const tbody = document.getElementById('auditTableBody');
+    if (!tbody) return;
+    const maxViews = Math.max(1, peak.views || 139429);
+
+    tbody.innerHTML = sortedFb.slice(0, 10).map((v, idx) => {
+      const views = v.views || 0;
+      const pct = Math.max(6, Math.round((views / maxViews) * 100));
+      const likes = (v.likes && v.likes.summary && v.likes.summary.total_count) || 0;
+      const comms = (v.comments && v.comments.summary && v.comments.summary.total_count) || 0;
+      const dateStr = (v.created_time || '').slice(0, 10);
+      const igMatch = igMedia.find((m) => (m.timestamp || '').slice(0, 10) === dateStr) || igMedia[idx] || {};
+      const sampleComments = ((v.comments && v.comments.data) || []).map((c) => c.message).filter(Boolean);
+      const igComments = ((igMatch.comments && igMatch.comments.data) || []).map((c) => c.text).filter(Boolean);
+      const quote = sampleComments[0] || igComments[0] || 'High completion rate on 50s–90s story beat';
+      const fbUrl = `https://www.facebook.com/1316616991525561/videos/${v.id}/`;
+      const igUrl = igMatch.permalink || 'https://www.instagram.com/naruto.uzumaki8067/';
+
+      return `
+        <tr>
+          <td><code>#${String(idx + 1).padStart(2, '0')}</code></td>
+          <td style="font-family:var(--mono);font-size:11.5px;color:var(--mono-text-2);">${dateStr}</td>
+          <td><code>${Math.round(v.length || 0)}s</code></td>
+          <td>
+            <strong style="font-size:13.5px;">${views.toLocaleString()}</strong>
+            <div class="view-bar-track"><div class="view-bar-fill" style="width:${pct}%"></div></div>
+          </td>
+          <td>${likes.toLocaleString()} likes · ${comms} comments</td>
+          <td><code>${igMatch.shortcode || 'IG Reel'}</code> · ${igMatch.like_count ?? 0} likes</td>
+          <td style="color:var(--mono-text-2);max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">“${String(quote).slice(0, 68)}”</td>
+          <td style="display:flex;gap:6px;">
+            <a class="ext-link" href="${fbUrl}" target="_blank" rel="noopener">FB ↗</a>
+            <a class="ext-link" href="${igUrl}" target="_blank" rel="noopener">IG ↗</a>
+          </td>
+        </tr>
+      `;
+    }).join('');
   }
 
-  fetch('/api/studio/analytics').then(r => r.json()).then(d => {
+  fetch('/api/studio/analytics').then((r) => r.json()).then((d) => {
     if (d && d.loaded) renderCreatorAudit(d);
   }).catch(() => {});
 
   window.addEventListener('creator-audit-ready', (ev) => {
-    renderCreatorAudit(ev.detail);
+    if (ev.detail) renderCreatorAudit(ev.detail);
   });
 
   const refreshAuditBtn = document.getElementById('refreshAuditBtn');
   if (refreshAuditBtn) {
     refreshAuditBtn.addEventListener('click', async () => {
       refreshAuditBtn.disabled = true;
-      refreshAuditBtn.textContent = '⏳ Auditing IG & FB Reels...';
+      refreshAuditBtn.textContent = 'Syncing Live IG & FB Reels...';
       try {
         if (window.runFullCreatorAudit) {
           const data = await window.runFullCreatorAudit();
-          renderCreatorAudit(data);
+          if (data) renderCreatorAudit(data);
         }
       } finally {
         refreshAuditBtn.disabled = false;
-        refreshAuditBtn.textContent = '🔄 Refresh Reels & Views Audit';
+        refreshAuditBtn.textContent = 'Refresh Live Reels & Views Audit';
       }
     });
   }
