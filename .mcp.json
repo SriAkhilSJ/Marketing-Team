@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json.schemastore.org/mcp.json",
+  "mcpServers": {
+    "kaggle": {
+      "comment": "Official Kaggle remote MCP (OAuth, no token to store). Tools: notebooks (start/poll/output), datasets, models, competitions, benchmarks.",
+      "command": "npx",
+      "args": ["-y", "mcp-remote", "https://www.kaggle.com/mcp"]
+    },
+    "kaggle-local": {
+      "comment": "Community stdio server with the Kaggle API behind it. Use when you want non-interactive automation (CI, scripts) instead of the OAuth browser flow. Set KAGGLE_API_TOKEN to a KGAT_ token from kaggle.com/settings.",
+      "command": "uvx",
+      "args": ["kaggle-mcp-server"],
+      "env": {
+        "KAGGLE_API_TOKEN": "${KAGGLE_API_TOKEN}"
+      }
+    }
+  }
+}
